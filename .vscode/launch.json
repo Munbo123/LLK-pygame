@@ -1,0 +1,211 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Example",
+            "request": "launch",
+            "mainClass": "test.Example",
+            "projectName": "Coding_296ccbfc"
+        },
+        {
+            "type": "java",
+            "name": "login",
+            "request": "launch",
+            "mainClass": "experiment.GUI.login",
+            "projectName": "untitled"
+        },
+        {
+            "type": "java",
+            "name": "NewJFrame",
+            "request": "launch",
+            "mainClass": "experiment.GUI.NewJFrame",
+            "projectName": "untitled"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "experiment.Main",
+            "projectName": "untitled"
+        },
+        {
+            "type": "java",
+            "name": "MainGUI",
+            "request": "launch",
+            "mainClass": "com.whut.client.MainGUI",
+            "projectName": "oop"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "test.Main",
+            "projectName": "Coding_296ccbfc"
+        },
+        {
+            "type": "java",
+            "name": "test2",
+            "request": "launch",
+            "mainClass": "test.test2",
+            "projectName": "Coding_296ccbfc"
+        },
+        {
+            "type": "java",
+            "name": "test1",
+            "request": "launch",
+            "mainClass": "test.test1",
+            "projectName": "Coding_296ccbfc"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "expirements.Main",
+            "projectName": "Coding_296ccbfc"
+        },
+        {
+            "type": "java",
+            "name": "Java调试",
+            "request": "launch",
+            "mainClass": "${file}",
+            "preLaunchTask": "Java编译",
+            "postDebugTask": "cleanClasses",
+            "classPaths": [
+                "${fileDirname}"
+            ]
+        },
+        {
+            "name": "C语言调试",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\temp.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "E:/Programming/C/mingw64/bin/gdb.exe",
+            "preLaunchTask": "C语言编译",
+            "postDebugTask": "cleanexes",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "将反汇编风格设置为 Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "防止 gdb 打开标准库函数",
+                    "text": "-interpreter-exec console \"skip -rfu std::.*\"",
+                    "ignoreFailures": false
+                }
+            ]
+        },
+        {
+            "name": "C++调试",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\temp.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "E:/Programming/C/mingw64/bin/gdb.exe",
+            "preLaunchTask": "C++编译",
+            "postDebugTask": "cleanexes",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "将反汇编风格设置为 Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "防止 gdb 打开标准库函数",
+                    "text": "-interpreter-exec console \"skip -rfu std::.*\"",
+                    "ignoreFailures": false
+                }
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "JavaScript调试",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "outFiles": [
+                "${workspaceFolder}/**"
+            ]
+        },
+        {
+            "name": "Python 调试",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "type": "pwa-msedge",
+            "name": "Launch Microsoft Edge",
+            "request": "launch",
+            "runtimeArgs": [
+                "--remote-debugging-port=9222"
+            ],
+            "url": "c:\\Users\\19722\\.vscode\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.8\\out\\startpage\\index.html", // Provide your project's url to finish configuring
+            "presentation": {
+                "hidden": true
+            }
+        },
+        {
+            "type": "pwa-msedge",
+            "name": "Launch Microsoft Edge in headless mode",
+            "request": "launch",
+            "runtimeArgs": [
+                "--headless",
+                "--remote-debugging-port=9222"
+            ],
+            "url": "c:\\Users\\19722\\.vscode\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.8\\out\\startpage\\index.html", // Provide your project's url to finish configuring
+            "presentation": {
+                "hidden": true
+            }
+        },
+        {
+            "type": "vscode-edge-devtools.debug",
+            "name": "Open Edge DevTools",
+            "request": "attach",
+            "url": "c:\\Users\\19722\\.vscode\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.8\\out\\startpage\\index.html", // Provide your project's url to finish configuring
+            "presentation": {
+                "hidden": true
+            }
+        }
+    ],
+    "version": "2.0.0",
+    "compounds": [
+        {
+            "name": "Launch Edge Headless and attach DevTools",
+            "configurations": [
+                "Launch Microsoft Edge in headless mode",
+                "Open Edge DevTools"
+            ]
+        },
+        {
+            "name": "Launch Edge and attach DevTools",
+            "configurations": [
+                "Launch Microsoft Edge",
+                "Open Edge DevTools"
+            ]
+        }
+    ],
+}

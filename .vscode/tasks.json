@@ -1,0 +1,99 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Java编译",
+            "type": "shell",
+            "command": "javac",
+            "args": [
+                "${file}",
+                "-d","."
+            ],
+            "presentation": {
+                "echo": true,
+                "showReuseMessage": false,
+                "reveal": "always",
+                "panel": "shared",
+                "close": true,
+            }
+
+        },
+        {
+            "label": "cleanClasses",    //删除class文件的任务
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "${fileDirname}/*.class"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "showReuseMessage": false,
+                "reveal": "never",
+                "panel": "shared",
+                "close": true
+            }
+
+        },
+        {
+            "label": "cleanexes",   //删除exe文件的任务
+            "type": "shell",
+            "command":"rm",
+            "args": [
+                "${workspaceFolder}/temp.exe"
+            ],
+            "presentation": {
+                "echo": true,
+                "showReuseMessage": false,
+                "reveal": "never",
+                "panel": "shared",
+                "close": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "C语言编译",
+            "command": "gcc",
+            "args": [
+                "-g",
+                "${file}",
+                "-o",
+                "${workspaceFolder}\\temp.exe"
+            ],
+            "presentation": {
+                "echo": true,
+                "showReuseMessage": false,
+                "reveal": "always",
+                "panel": "shared",
+                "close": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "C++编译",
+            "command": "g++",
+            "args": [
+                "-g",
+                "${file}",
+                "-o",
+                "${workspaceFolder}\\temp.exe"
+            ],
+            "presentation": {
+                "echo": true,
+                "showReuseMessage": false,
+                "reveal": "always",
+                "panel": "shared",
+                "close": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        },
+        
+    ]
+}

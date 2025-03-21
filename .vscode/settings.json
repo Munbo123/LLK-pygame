@@ -1,0 +1,74 @@
+{   
+    //杂项
+    "window.zoomLevel": 1,                          //调整整体缩放比例
+    "explorer.confirmDelete": false,                //删除文件是否需要确认
+    "explorer.confirmDragAndDrop": false,           //拖放操作是否需要确认
+    "terminal.integrated.enableMultiLinePasteWarning": "never",   //在终端粘贴多行文本时是否警告
+    "debug.onTaskErrors": "showErrors",             //调试时出现错误如何反应：显示错误但不自动终止
+    "editor.unicodeHighlight.nonBasicASCII": false,  //是否高亮显示非ASCII码字符
+    "workbench.editor.autoLockGroups": {"terminalEditor": true},//与点开文件的时候是否覆盖有关
+    "editor.fontSize": 16,                          //字体大小默认16
+    "window.openFoldersInNewWindow": "default",     //是否在新的窗口打开文件夹：默认
+    "workbench.iconTheme": "vscode-icons",          //所采用的图标样式
+    "files.autoSave": "afterDelay",                 //自动保存设置：一段时间后自动保存
+    "editor.mouseWheelZoom": true,                  //鼠标滚轮控制字体大小(按住ctrl)
+    "files.autoGuessEncoding": true,                //自动猜测文件类型
+    "editor.wordWrap": "on",                        //自动折叠过长代码            
+    "editor.acceptSuggestionOnEnter": "smart",      //如何接受建议：智能选择
+    "editor.suggestSelection": "recentlyUsed",      //代码补充中什么建议放在前面:最近使用的 
+    "window.dialogStyle": "custom",                 //对话框样式
+    "debug.showBreakpointsInOverviewRuler": true,   //在鸟瞰图中显示断点
+    "files.exclude":{
+    "**/.git": false
+    },                                              //显示.git.隐藏文件
+
+
+    //Python相关
+    "python.analysis.completeFunctionParens": true, //在输入完一个函数后是否进行括号补全
+
+
+
+    //C语言相关
+    "cmake.configureOnOpen": true,                  //是否自动配置Cmake相关操作
+
+
+    //java相关
+    "java.debug.settings.onBuildFailureProceed": true,      //编译失败时是否聚焦到错误
+    // 调试时忽略的class文件
+    "java.debug.settings.stepping.skipClasses":[    
+        "$JDK",
+        "$Libraries",
+        "java.lang.ClassLoader",
+    ],
+
+    
+    //平滑效果
+    "terminal.integrated.smoothScrolling": true,    //动画滚动
+    "editor.cursorBlinking": "smooth",              //光标闪烁形式：光滑
+    "editor.cursorSmoothCaretAnimation": "on",      //平滑插入动画
+    "workbench.list.smoothScrolling": true,         //平滑滚动
+    //=================================================================//
+
+    
+    //壁纸插件设置
+    // "backgroundCover.opacity": 0.2,        //壁纸透明度
+    // "backgroundCover.randomImageFolder": "c:\\Users\\19722\\Desktop\\Coding\\壁纸",     //壁纸文件夹   
+    
+
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "files.associations": {
+        "iostream": "cpp",
+        "fstream": "cpp",
+        "iosfwd": "cpp"
+    },
+    "git.ignoreLimitWarning": true,
+    "liveServer.settings.port": 5501,
+    
+
+    
+
+
+
+
+    
+}
