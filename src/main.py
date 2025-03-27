@@ -39,6 +39,7 @@ class Button:
         self.font = font
         self.font_size = font_size
         self.text = text
+        # 创建字体对象
         self.button_font = pygame.font.SysFont(font, font_size)
         self.button_text = self.button_font.render(text, True, text_color)
 
@@ -55,16 +56,14 @@ class Button:
 
     def enable_button(self):
         self.enable = True
-        self.button_color = self.button_color
-        self.text_color = self.text_color
         self.button_text = self.button_font.render(self.text, True, self.text_color)
         self.draw()
     
     def disable_button(self):
         self.enable = False
-        self.button_color = (200, 200, 200)
-        self.text_color = (100, 100, 100)
-        self.button_text = self.button_font.render(self.text, True, self.text_color)
+        disabled_button_color = (200, 200, 200)
+        disabled_text_color = (100, 100, 100)
+        self.button_text = self.button_font.render(self.text, True, disabled_text_color)
         self.draw()
     
     def is_button_enabled(self):
@@ -221,19 +220,34 @@ class Basic_mode:
             'help_button': help_button
         }
         
-
     def generate_game_matrix(self):
         # 随机生成游戏地图
         self.row = 10
         self.col = 16
+        self.row = 2
+        self.col = 4
+        self.left_fruit = self.row*self.col # 剩余水果数量
         self.game_matrix_x = 20
         self.game_matrix_y = 50
         self.choosen_fruit = set() # 选中元素的坐标集合
         self.matrix = [[None]*self.col for _ in range(self.row)] # 10行16列的矩阵
+
+        fruits_temp = [] # 临时存储水果图像索引
+        for i in range(self.row*self.col//2):
+            # 同时生成两个相同的水果图像索引
+            add_fruit = random.randint(0,len(self.fruit_images)-1)
+            fruits_temp.append(add_fruit)
+            fruits_temp.append(add_fruit)
+        # 打乱水果图像索引
+        random.shuffle(fruits_temp)
+  
+        # 将水果图像索引填入矩阵
+        cnt = 0
         for i in range(self.row):
             for j in range(self.col):
                 # 随机选择水果图像
-                fruit_image_index = random.randint(0,len(self.fruit_images)-1)
+                fruit_image_index = fruits_temp[cnt]
+                cnt += 1
                 # 计算水果图像在屏幕上的位置
                 pos_x = self.game_matrix_x + j * 40
                 pos_y = self.game_matrix_y + i * 40
@@ -285,7 +299,6 @@ class Basic_mode:
         
         pygame.display.flip()
 
-
     def handle(self):
         global done,current_page
         start_button:Button = self.buttons['start_button'] 
@@ -301,10 +314,12 @@ class Basic_mode:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 # 判断鼠标点击位置是否在按钮区域内
                 if start_button.collidepoint(event.pos):
-                    print("开始游戏按钮 clicked")
                     if start_button.is_button_enabled():
+                        print("开始游戏按钮 clicked")
                         self.generate_game_matrix()
                         start_button.disable_button()
+                    else:
+                        print("开始游戏按钮 clicked, but it is disabled")
                 elif pause_button.collidepoint(event.pos):
                     print("暂停游戏按钮 clicked")
                     # for i in range(len(self.matrix)):
@@ -355,6 +370,12 @@ class Basic_mode:
                                     self.matrix[fruit2_x][fruit2_y] = None
                                     # 绘制消除界面
                                     self.draw_clear_animation(waypoints)
+                                    self.left_fruit -= 2
+                                    # 判断游戏是否结束
+                                    if self.left_fruit == 0:
+                                        print("游戏结束")
+                                        # 重启游戏
+                                        start_button.enable_button()  
                                 else:
                                     print("不可以消除")
                                     # 取消选中状态
@@ -439,7 +460,7 @@ class Basic_mode:
         # 暂停1秒钟
         time.sleep(0.5)
         # 清除事件队列
-        pygame.event.clear() 
+        # pygame.event.clear() 
 
     def rearrangement(self):
         '''重排游戏地图（不是重新生成）'''
@@ -454,6 +475,8 @@ class Basic_mode:
         random.shuffle(flat_list)
         # 将打乱后的元素重新填入矩阵
         cnt = 0
+        # 防止选中元素没更新导致错误
+        self.choosen_fruit.clear()
         for i in range(row):
             for j in range(col):
                 pos_x = self.game_matrix_x + j * 40
@@ -461,6 +484,8 @@ class Basic_mode:
                 if flat_list[cnt] != None:
                     self.matrix[i][j] = flat_list[cnt]
                     self.matrix[i][j]['pos'] = (pos_x, pos_y)
+                    if self.matrix[i][j]['choosen']:
+                        self.choosen_fruit.add((i,j))
                 else:
                     self.matrix[i][j] = None
                 cnt += 1
