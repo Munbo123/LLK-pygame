@@ -194,6 +194,12 @@ class Basic_mode:
             rect = pygame.Rect(0, i * 40, 40, 40)
             self.fruit_images.append(self.processed_fruit_sheet.subsurface(rect).copy())  # 注意用 copy() 得到独立的 Surface
 
+        # # 将切好的图片保存到当前目录
+        # cnt = 0
+        # for fruit_image in self.fruit_images:
+        #     pygame.image.save(fruit_image, os.path.join(os.getcwd(), f"fruit_{cnt}.png"))
+        #     cnt += 1
+
         self.matrix = None
 
     def init_buttons(self):
@@ -255,7 +261,7 @@ class Basic_mode:
                     'rect' : rect,
                     'pos' : (pos_x, pos_y),
                     'index' : fruit_image_index,
-                    'choosen' : False       # 是否被选中
+                    'status' : 'normal'       # 是否被选中
                 }
         
     def draw(self):
@@ -288,12 +294,18 @@ class Basic_mode:
                     fruit = self.matrix[row][col]
                     # 如果水果元素不为空，则绘制水果图像
                     if fruit != None:
-                        rect,pos,choosen = fruit['rect'],fruit['pos'],fruit['choosen']
+                        rect,pos,status = fruit['rect'],fruit['pos'],fruit['status']
                         screen.blit(rect, pos)
-                        if choosen:
+                        if status == 'choosen':
                             # 绘制红色边框
                             selected_rect = pygame.Rect(pos, (40, 40))
                             pygame.draw.rect(screen, (255, 0, 0), selected_rect, 2)
+                        elif status == 'hint':
+                            # 绘制黄色边框
+                            selected_rect = pygame.Rect(pos, (40, 40))
+                            pygame.draw.rect(screen, (255, 255, 0), selected_rect, 4)
+                        elif status == 'normal':
+                            pass
         
         pygame.display.flip()
 
@@ -320,20 +332,14 @@ class Basic_mode:
                         print("开始游戏按钮 clicked, but it is disabled")
                 elif pause_button.collidepoint(event.pos):
                     print("暂停游戏按钮 clicked")
-                    # for i in range(len(self.matrix)):
-                    #     for j in range(len(self.matrix[0])):
-                    #         fruit = self.matrix[i][j]
-                    #         if fruit == None:
-                    #             print('None',end=' ')
-                    #         else:
-                    #             print(fruit['index'],end=' ')
-                    #     print()
-                    print(start_button.is_button_enabled())
+                    self._test()
                 elif hint_button.collidepoint(event.pos):
                     print("提示按钮 clicked")
+                    self.promot()
                 elif restart_button.collidepoint(event.pos):
                     print("重排按钮 clicked")
                     self.rearrangement()
+                    self.reset_status()
                 elif setting_button.collidepoint(event.pos):
                     print("设置按钮 clicked")
                 elif help_button.collidepoint(event.pos):
@@ -344,102 +350,190 @@ class Basic_mode:
                     i = int((event.pos[1]-self.game_matrix_y) / 40) # 选中行数
                     j = int((event.pos[0]-self.game_matrix_x) / 40) # 选中列数
                     # print(f"现在点击了行：{i}，列：{j}")
-                    # 修改选中元素的choosen属性
+                    # 修改选中元素的status属性
                     if i >= 0 and i < self.row and j >= 0 and j < self.col and self.matrix[i][j]!=None:
-                        # 如果当前元素已经被选中，则取消选中
-                        if self.matrix[i][j]['choosen']:
-                            self.matrix[i][j]['choosen'] = False
+                        if self.matrix[i][j]['status'] == 'choosen':
+                            # 如果当前元素已经被选中，则取消选中
+                            self.matrix[i][j]['status'] = 'normal'
                             self.choosen_fruit.remove((i,j))
                         else:
-                            self.matrix[i][j]['choosen'] = True
+                            # 如果当前元素没有被选中，则选中它
+                            self.matrix[i][j]['status'] in ['normal','hint']
+                            self.matrix[i][j]['status'] = 'choosen'
                             self.choosen_fruit.add((i,j))
-                            if len(self.choosen_fruit) == 2:
-                                fruit1_x, fruit1_y = self.choosen_fruit.pop()
-                                fruit2_x, fruit2_y = self.choosen_fruit.pop()
-                                fruit1 = self.matrix[fruit1_x][fruit1_y]
-                                fruit2 = self.matrix[fruit2_x][fruit2_y]
-                                # 判断两个水果元素是否可以消除
-                                waypoints = self.is_eliminable(fruit1_x,fruit1_y,fruit2_x,fruit2_y)
-                                print(waypoints)
-                                if waypoints:
-                                    print("可以消除")
-                                    # 消除水果元素
-                                    self.matrix[fruit1_x][fruit1_y] = None
-                                    self.matrix[fruit2_x][fruit2_y] = None
-                                    # 绘制消除界面
-                                    self.draw_clear_animation(waypoints)
-                                    self.left_fruit -= 2
-                                    # 判断游戏是否结束
-                                    if self.left_fruit == 0:
-                                        print("游戏结束")
-                                        # 重启游戏
-                                        start_button.enable_button()  
-                                        # 显示胜利消息
-                                        self.show_victory_message()
-                                else:
-                                    print("不可以消除")
-                                    # 取消选中状态
-                                    fruit1['choosen'] = False
-                                    fruit2['choosen'] = False
 
-    def is_eliminable(self, fruit1_x,fruit1_y,fruit2_x,fruit2_y):
+                        if len(self.choosen_fruit) == 2:
+                            fruit1_x, fruit1_y = self.choosen_fruit.pop()
+                            fruit2_x, fruit2_y = self.choosen_fruit.pop()
+                            fruit1 = self.matrix[fruit1_x][fruit1_y]
+                            fruit2 = self.matrix[fruit2_x][fruit2_y]
+                            # 判断两个水果元素是否可以消除，可以则返回路径点列表，不可以则返回空列表
+                            if fruit1['index'] != fruit2['index']:
+                                waypoints = []
+                            else:
+                                waypoints = self.is_eliminable((fruit1_x,fruit1_y),(fruit2_x,fruit2_y))
+                            print(waypoints)
+                            if waypoints:
+                                print("可以消除")
+                                # 消除水果元素
+                                self.matrix[fruit1_x][fruit1_y] = None
+                                self.matrix[fruit2_x][fruit2_y] = None
+                                # 绘制消除界面
+                                self.draw_clear_animation(waypoints)
+                                self.left_fruit -= 2
+                                # 判断游戏是否结束
+                                if self.left_fruit == 0:
+                                    print("游戏结束")
+                                    # 重启游戏
+                                    start_button.enable_button()  
+                                    # 显示胜利消息
+                                    self.show_victory_message()
+                            else:
+                                print("不可以消除")
+                                # 取消选中状态
+                                fruit1['status'] = 'normal'
+                                fruit2['status'] = 'normal'
+
+                            # 无论是否消除，都要重置元素状态，目前等价于消除所有的hint状态
+                            self.reset_status()
+
+    def reset_status(self):
+        '''重置所有元素的状态为normal'''
+        for row in range(len(self.matrix)):
+            for col in range(len(self.matrix[0])):
+                fruit = self.matrix[row][col]
+                if fruit != None:
+                    fruit['status'] = 'normal'
+
+    def _test(self):
+        '''调试专用函数，用于各种开挂功能'''
+        # # 输出整个矩阵
+        # for i in range(len(self.matrix)):
+        #     for j in range(len(self.matrix[0])):
+        #         fruit = self.matrix[i][j]
+        #         if fruit == None:
+        #             print('None',end=' ')
+        #         else:
+        #             print(fruit['index'],end=' ')
+        #     print()
+
+        # 显示开始按钮的状态
+        start_button:Button = self.buttons['start_button']
+        print(start_button.is_button_enabled())
+
+    def is_eliminable(self, fruit1:tuple[int,int],fruit2:tuple[int,int],turns:int=2):
         '''
         判断两个水果元素是否可以消除,如果可以消除，返回True和消除路线的途径转折点（按顺序，包括起点和终点）
         '''
-        waypoints = [] # 途径转折点
-        # 判断两个水果元素是否在同一行或者同一列
-        if self.matrix[fruit1_x][fruit1_y]['index'] != self.matrix[fruit2_x][fruit2_y]['index']:
-            return waypoints
-        else:
-            # 判断两个水果元素之间是否有障碍物
-            # 设起点为x水果，终点为y水果
-            # 由于至多转折两次，而0次转折和1次转折均可视作2次转折的特殊情况，故均按照2次转折处理
-            # 有两种策略，一种是先走到与y水果相同的横坐标，再一步走到y水果的纵坐标，另一种是先走到与y水果相同的纵坐标，再一步走到y水果的横坐标
-            # 先考虑前者，第一步是横向移动， 为了加速算法，（算了算了先暴力吧）
+        waypoints = []   
+        if turns == 0:
+            # 不能有转折，直接判断是否在同一行或者同一列，且没有障碍物
+            if fruit1[0] == fruit2[0] or fruit1[1] == fruit2[1]:
+                if self.is_clear_path(fruit1, fruit2):
+                    waypoints.append(fruit1)
+                    waypoints.append(fruit2)
+                    return waypoints
 
-            # 暴力
-            smallest_x = min(fruit1_x, fruit2_x)
-            largest_x = max(fruit1_x, fruit2_x)
-            smallest_y = min(fruit1_y, fruit2_y)
-            largest_y = max(fruit1_y, fruit2_y)
-            ignore_points = [(fruit1_x, fruit1_y), (fruit2_x, fruit2_y)] # 忽略的点
-            for first_turn_x in range(smallest_x,largest_x+1):
-                first_turn = (first_turn_x, fruit1_y)
-                second_turn = (first_turn_x, fruit2_y)
-                # 判断是否有障碍物
-                if self.is_clear_path((fruit1_x,fruit1_y), first_turn,ignore_points) and self.is_clear_path(first_turn, second_turn,ignore_points) and self.is_clear_path(second_turn, (fruit2_x,fruit2_y),ignore_points):
-                    waypoints.append((fruit1_x, fruit1_y))
-                    waypoints.append(first_turn)
-                    waypoints.append(second_turn)
-                    waypoints.append((fruit2_x, fruit2_y))
-                    return waypoints
-            for first_turn_y in range(smallest_y,largest_y+1):
-                first_turn = (fruit1_x, first_turn_y)
-                second_turn = (fruit2_x, first_turn_y)
-                # 判断是否有障碍物
-                if self.is_clear_path((fruit1_x,fruit1_y), first_turn,ignore_points) and self.is_clear_path(first_turn, second_turn,ignore_points) and self.is_clear_path(second_turn, (fruit2_x,fruit2_y),ignore_points):
-                    waypoints.append((fruit1_x, fruit1_y))
-                    waypoints.append(first_turn)
-                    waypoints.append(second_turn)
-                    waypoints.append((fruit2_x, fruit2_y))
-                    return waypoints
+        elif turns == 1:
+            # 只能有一个转折,遍历转折点，判断（fruit1,转折点）和（转折点,fruit2）是否有障碍物
+            # 转折点只有两个选项
+            turn1 = (fruit1[0], fruit2[1])
+            turn2 = (fruit2[0], fruit1[1])
+            if self.matrix[turn1[0]][turn1[1]]==None and self.is_clear_path(fruit1, turn1) and self.is_clear_path(turn1, fruit2):
+                waypoints.append(fruit1)
+                waypoints.append(turn1)
+                waypoints.append(fruit2)
+                return waypoints
+            if self.matrix[turn2[0]][turn2[1]]==None and self.is_clear_path(fruit1, turn2) and self.is_clear_path(turn2, fruit2):
+                waypoints.append(fruit1)
+                waypoints.append(turn2)
+                waypoints.append(fruit2)
+                return waypoints
+        elif turns == 2:
+            # 先从起点开始，往四个方向遍历第一个转折点，然后递归调用自己，判断从第一个转折点到终点是否存在路径
+            # 向上
+            ans_0 = self.is_eliminable(fruit1,fruit2,0)
+            if ans_0:
+                return ans_0
+            
+            ans_1 = self.is_eliminable(fruit1,fruit2,1)
+            if ans_1:
+                return ans_1
+
+            # 向上
+            x,y = fruit1
+            x-=1
+            while x>=0:
+                turn1 = (x,y)
+                if self.matrix[x][y] != None:
+                    break
+                else:
+                    temp = self.is_eliminable(turn1, fruit2, 1)
+                    if temp:
+                        waypoints.append(fruit1)
+                        waypoints.extend(temp)
+                        return waypoints
+                x -= 1
+
+            # 向下
+            x,y = fruit1
+            x+=1
+            while x<self.row:
+                turn1 = (x,y)
+                if self.matrix[x][y] != None:
+                    break
+                else:
+                    temp = self.is_eliminable(turn1, fruit2, 1)
+                    if temp:
+                        waypoints.append(fruit1)
+                        waypoints.extend(temp)
+                        return waypoints
+                x += 1
+            
+            # 向左
+            x,y = fruit1
+            y-=1
+            while y>=0:
+                turn1 = (x,y)
+                if self.matrix[x][y] != None:
+                    break
+                else:
+                    temp = self.is_eliminable(turn1, fruit2, 1)
+                    if temp:
+                        waypoints.append(fruit1)
+                        waypoints.extend(temp)
+                        return waypoints
+                y -= 1
+            
+            # 向右
+            x,y = fruit1
+            y+=1
+            while y<self.col:
+                turn1 = (x,y)
+                if self.matrix[x][y] != None:
+                    break
+                else:
+                    temp = self.is_eliminable(turn1, fruit2, 1)
+                    if temp:
+                        waypoints.append(fruit1)
+                        waypoints.extend(temp)
+                        return waypoints
+                y += 1
         return waypoints
-
-    def is_clear_path(self,start:tuple[int,int],end:tuple[int,int],ignore_points:list[tuple[int,int],tuple[int,int]]) -> bool:
-        '''判断两个点之间是否有障碍物，两个点必须有一个坐标相同'''
-        start_x, start_y = start
-        end_x, end_y = end
-        if start_x != end_x and start_y != end_y:
+                
+    def is_clear_path(self,start:tuple[int,int],end:tuple[int,int]):
+        '''判断两个点之间是否有障碍物，两个点必须有一个坐标相同,不包含起点和终点'''
+        if (start[0] != end[0]) and (start[1] != end[1]):
             return False
-        elif start_x == end_x:
-            for i in range(min(start_y, end_y), max(start_y, end_y)+1):
+        elif start[0] == end[0]:
+            for i in range(min(start[1], end[1])+1, max(start[1], end[1])):
                 # 需要排除起点和终点
-                if self.matrix[start_x][i] != None and (start_x,i) not in ignore_points:
+                if self.matrix[start[0]][i] != None:
                     return False
-        elif start_y == end_y:
-            for i in range(min(start_x, end_x), max(start_x, end_x)+1):
+        elif start[1] == end[1]:
+            for i in range(min(start[0], end[0])+1, max(start[0], end[0])):
                 # 需要排除起点和终点
-                if self.matrix[i][start_y] != None and (i, start_y) not in ignore_points:
+                if self.matrix[i][start[1]] != None:
                     return False
         return True
 
@@ -484,14 +578,46 @@ class Basic_mode:
                 if flat_list[cnt] != None:
                     self.matrix[i][j] = flat_list[cnt]
                     self.matrix[i][j]['pos'] = (pos_x, pos_y)
-                    if self.matrix[i][j]['choosen']:
+                    if self.matrix[i][j]['status'] == 'choosen':
                         self.choosen_fruit.add((i,j))
                 else:
                     self.matrix[i][j] = None
                 cnt += 1
     
     def promot(self):
-        pass
+        '''遍历矩阵，寻找两个可以消除的元素,并且标黄'''
+        for i in range(len(self.matrix)):
+            if self.matrix[i] == None:
+                continue
+            for j in range(len(self.matrix[0])):
+                if self.matrix[i][j] == None:
+                    continue
+                fruit1 = self.matrix[i][j]
+                # 遍历剩余元素
+                for m in range(len(self.matrix)):
+                    for n in range(len(self.matrix[0])):
+                        if m==i and n==j or self.matrix[m][n] == None:
+                            continue
+                        fruit2 = self.matrix[m][n]
+                        # 先要确保两个水果的种类相同
+                        if fruit2['index'] != fruit1['index']:
+                            continue
+                        else:
+                            waypoints = self.is_eliminable((i,j),(m,n))
+                            if waypoints:
+                                fruit1['status'] = 'hint'
+                                fruit2['status'] = 'hint'
+                                return
+        # 如果没有找到可以消除的元素，则提示没有提示信息
+        print("没有可以消除的元素")
+        # 提示信息显示2秒
+        text_color = (255, 255, 255)
+        font = pygame.font.SysFont('fangsong', 40)
+        message = font.render('没有可以消除的元素', True, text_color)
+        message_rect = message.get_rect(center=(screen_width/2, screen_height/2-50))
+        screen.blit(message, message_rect)
+        pygame.display.flip()
+        pygame.time.wait(2000)
 
     def show_victory_message(self):
         """显示胜利消息"""
