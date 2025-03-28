@@ -74,6 +74,88 @@ class Button:
         return False
 
 
+class Progress_bar:
+    def __init__(self):
+        # 用于计时的变量
+        self.total_time = 300 # 总时间默认300秒
+        self.start_time = None
+        self.progress_running = False
+        # 进度条参数
+        self.bar_width = 500  # 进度条总宽度
+        self.bar_height = 20
+        self.bar_x = (screen_width-self.bar_width)/2-50  # 进度条绘制起始坐标
+        self.bar_y = 500
+        self.font = pygame.font.SysFont('fangsong', 24)
+        self.bar_border_radius = 20
+
+    def draw(self):
+        if self.start_time is not None:
+            # 绘制倒计时条
+            # 计算剩余时间
+            elapsed_time = (pygame.time.get_ticks() - self.start_time) / 1000
+            remaining_time = max(0, self.total_time - elapsed_time)
+            ratio = remaining_time / self.total_time
+            current_width = int(self.bar_width * ratio)
+            pygame.draw.rect(screen, (200, 200, 200), (self.bar_x+current_width, self.bar_y, self.bar_width-current_width, self.bar_height),border_top_right_radius=self.bar_border_radius,border_bottom_right_radius=self.bar_border_radius)
+            pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, current_width, self.bar_height),border_top_left_radius=self.bar_border_radius,border_bottom_left_radius=self.bar_border_radius)
+            text = self.font.render(f"倒计时: {int(remaining_time)}秒", True, (0, 0, 0))
+            # 在进度条上方绘制倒计时文本
+            screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
+            if remaining_time <= 0:
+                print("倒计时结束")
+                self.start_time = None
+                start_button.enable_button() # 重新启用开始按钮
+                # 显示失败消息
+                text_color = (255, 0, 0)
+                font = pygame.font.SysFont('fangsong', 40)
+                message = font.render('游戏失败', True, text_color)
+                message_rect = message.get_rect(center=(screen_width/2, screen_height/2-50))
+                screen.blit(message, message_rect)
+                pygame.display.flip()
+                pygame.time.delay(2000) # 等待2秒
+                self.reset_status('disabled') # 重置所有元素的状态为normal         
+        else:
+            # 绘制一个全满的进度条,并显示倒计时为total_time
+            pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, self.bar_width, self.bar_height),border_radius=self.bar_border_radius)
+            text = self.font.render(f"倒计时: {self.total_time}秒", True, (0, 0, 0))
+            # 在进度条上侧绘制倒计时文本
+            screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
+    
+    def start(self):
+        '''开始计时'''
+        self.start_time = pygame.time.get_ticks()
+        self.progress_running = True
+
+    def pause(self):
+        '''暂停计时'''
+        if self.start_time is not None:
+            elapsed_time = (pygame.time.get_ticks() - self.start_time) / 1000
+            self.total_time -= elapsed_time
+            self.start_time = None
+            self.progress_running = False
+
+    def remaining_time(self):
+        '''返回剩余时间'''
+        if self.start_time is not None:
+            elapsed_time = (pygame.time.get_ticks() - self.start_time) / 1000
+            remaining_time = max(0, self.total_time - elapsed_time)
+            return remaining_time
+        return self.total_time
+
+    def set_total_time(self,total_time:int):
+        self.total_time = total_time
+
+    def set_time(self,current_time:int):
+        pass
+
+    def add_time(self,add_time:int):
+        pass
+
+    def reduce_time(self,reduce_time:int):
+        pass
+
+
+
 class Main_menu:
     def __init__(self):
         pass
@@ -141,14 +223,7 @@ class Main_menu:
 class Basic_mode:
     def __init__(self):
         self.matrix = None
-        self.total_time = 10 # 总时间300秒
-        self.start_time = None
-        self.bar_width = 500  # 进度条总宽度
-        self.bar_height = 20
-        self.bar_x = (screen_width-self.bar_width)/2-50  # 进度条绘制起始坐标
-        self.bar_y = 500
-        self.font = pygame.font.SysFont('fangsong', 24)
-        self.bar_border_radius = 20
+
 
         self.init_buttons()
 
@@ -187,8 +262,6 @@ class Basic_mode:
         # for fruit_image in self.fruit_images:
         #     pygame.image.save(fruit_image, os.path.join(os.getcwd(), f"fruit_{cnt}.png"))
         #     cnt += 1
-
-
 
     def init_buttons(self):
         # 绘制按钮
@@ -274,38 +347,7 @@ class Basic_mode:
         setting_button.draw()
         help_button.draw()
 
-        if self.start_time is not None:
-            # 绘制倒计时条
-            # 计算剩余时间
-            elapsed_time = (pygame.time.get_ticks() - self.start_time) / 1000
-            remaining_time = max(0, self.total_time - elapsed_time)
-            ratio = remaining_time / self.total_time
-            current_width = int(self.bar_width * ratio)
-            pygame.draw.rect(screen, (200, 200, 200), (self.bar_x+current_width, self.bar_y, self.bar_width-current_width, self.bar_height),border_top_right_radius=self.bar_border_radius,border_bottom_right_radius=self.bar_border_radius)
-            pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, current_width, self.bar_height),border_top_left_radius=self.bar_border_radius,border_bottom_left_radius=self.bar_border_radius)
-            text = self.font.render(f"倒计时: {int(remaining_time)}秒", True, (0, 0, 0))
-            # 在进度条上方绘制倒计时文本
-            screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
-            if remaining_time <= 0:
-                print("倒计时结束")
-                self.start_time = None
-                start_button.enable_button() # 重新启用开始按钮
-                # 显示失败消息
-                text_color = (255, 0, 0)
-                font = pygame.font.SysFont('fangsong', 40)
-                message = font.render('游戏失败', True, text_color)
-                message_rect = message.get_rect(center=(screen_width/2, screen_height/2-50))
-                screen.blit(message, message_rect)
-                pygame.display.flip()
-                pygame.time.delay(2000) # 等待2秒
-                self.reset_status('disabled') # 重置所有元素的状态为normal
-                
-        else:
-            # 绘制一个全满的进度条,并显示倒计时为total_time
-            pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, self.bar_width, self.bar_height),border_radius=self.bar_border_radius)
-            text = self.font.render(f"倒计时: {self.total_time}秒", True, (0, 0, 0))
-            # 在进度条上侧绘制倒计时文本
-            screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
+        
         
 
         # 绘制游戏界面时，使用水果图像
