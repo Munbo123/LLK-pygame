@@ -140,7 +140,19 @@ class Main_menu:
 
 class Basic_mode:
     def __init__(self):
+        self.matrix = None
+        self.total_time = 10 # 总时间300秒
+        self.start_time = None
+        self.bar_width = 500  # 进度条总宽度
+        self.bar_height = 20
+        self.bar_x = (screen_width-self.bar_width)/2-50  # 进度条绘制起始坐标
+        self.bar_y = 500
+        self.font = pygame.font.SysFont('fangsong', 24)
+        self.bar_border_radius = 20
+
         self.init_buttons()
+
+
 
         '''
         游戏地图区域
@@ -149,30 +161,6 @@ class Basic_mode:
         (3) 每张图片大小：40*40，单位像素。
         (4) 游戏地图中包含 16 种图片。(先以不同颜色的背景代替)
         '''
-
-        # '''方案一：使用 set_colorkey() 方法，设置纯白色为背景色，效果不佳'''
-        # # 加载整个水果图集
-        # self.fruit_sheet = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_element.bmp").convert()
-
-        # 将图集切分为10个水果图像
-        # self.fruit_images = []
-        # for i in range(10):
-        #     rect = pygame.Rect(0, i * 40, 40, 40)      # 因为图片竖直排列
-        #     fruit_image = self.fruit_sheet.subsurface(rect).copy()  # 注意用 copy() 得到独立的 Surface
-        #     fruit_image.set_colorkey((255, 255, 255))  # 将白色设为透明
-        #     self.fruit_images.append(fruit_image)
-
-
-        # '''方案二，手动ps掉白色背景，效果稍好，但是仍然有残留'''
-        # self.fruit_sheet = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_element_after_ps.bmp").convert()
-        # self.fruit_images = []
-        # for i in range(10):
-        #     rect = pygame.Rect(0, i * 40, 40, 40)
-        #     fruit_image = self.fruit_sheet.subsurface(rect).copy()  # 注意用 copy() 得到独立的 Surface
-        #     fruit_image.set_colorkey((255, 255, 255))  # 将白色设为透明
-        #     self.fruit_images.append(fruit_image)
-
-        '''方案三，采用mask.bmp处理原图,效果最好'''
         self.fruit_sheet = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_element.bmp").convert()
         self.fruit_mask = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_mask.bmp").convert()
         # 将 mask.bmp 转换为透明的 Surface
@@ -200,7 +188,7 @@ class Basic_mode:
         #     pygame.image.save(fruit_image, os.path.join(os.getcwd(), f"fruit_{cnt}.png"))
         #     cnt += 1
 
-        self.matrix = None
+
 
     def init_buttons(self):
         # 绘制按钮
@@ -286,7 +274,41 @@ class Basic_mode:
         setting_button.draw()
         help_button.draw()
 
+        if self.start_time is not None:
+            # 绘制倒计时条
+            # 计算剩余时间
+            elapsed_time = (pygame.time.get_ticks() - self.start_time) / 1000
+            remaining_time = max(0, self.total_time - elapsed_time)
+            ratio = remaining_time / self.total_time
+            current_width = int(self.bar_width * ratio)
+            pygame.draw.rect(screen, (200, 200, 200), (self.bar_x+current_width, self.bar_y, self.bar_width-current_width, self.bar_height),border_top_right_radius=self.bar_border_radius,border_bottom_right_radius=self.bar_border_radius)
+            pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, current_width, self.bar_height),border_top_left_radius=self.bar_border_radius,border_bottom_left_radius=self.bar_border_radius)
+            text = self.font.render(f"倒计时: {int(remaining_time)}秒", True, (0, 0, 0))
+            # 在进度条上方绘制倒计时文本
+            screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
+            if remaining_time <= 0:
+                print("倒计时结束")
+                self.start_time = None
+                start_button.enable_button() # 重新启用开始按钮
+                # 显示失败消息
+                text_color = (255, 0, 0)
+                font = pygame.font.SysFont('fangsong', 40)
+                message = font.render('游戏失败', True, text_color)
+                message_rect = message.get_rect(center=(screen_width/2, screen_height/2-50))
+                screen.blit(message, message_rect)
+                pygame.display.flip()
+                pygame.time.delay(2000) # 等待2秒
+                self.reset_status('disabled') # 重置所有元素的状态为normal
+                
+        else:
+            # 绘制一个全满的进度条,并显示倒计时为total_time
+            pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, self.bar_width, self.bar_height),border_radius=self.bar_border_radius)
+            text = self.font.render(f"倒计时: {self.total_time}秒", True, (0, 0, 0))
+            # 在进度条上侧绘制倒计时文本
+            screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
+        
 
+        # 绘制游戏界面时，使用水果图像
         if self.matrix:
             # 绘制游戏界面时，使用水果图像
             for row in range(len(self.matrix)):
@@ -328,6 +350,8 @@ class Basic_mode:
                         print("开始游戏按钮 clicked")
                         self.generate_game_matrix()
                         start_button.disable_button()
+                        self.total_time = 10 # 总时间300秒
+                        self.start_time = pygame.time.get_ticks()
                     else:
                         print("开始游戏按钮 clicked, but it is disabled")
                 elif pause_button.collidepoint(event.pos):
@@ -339,7 +363,7 @@ class Basic_mode:
                 elif restart_button.collidepoint(event.pos):
                     print("重排按钮 clicked")
                     self.rearrangement()
-                    self.reset_status()
+                    self.reset_status('normal')
                 elif setting_button.collidepoint(event.pos):
                     print("设置按钮 clicked")
                 elif help_button.collidepoint(event.pos):
@@ -356,11 +380,15 @@ class Basic_mode:
                             # 如果当前元素已经被选中，则取消选中
                             self.matrix[i][j]['status'] = 'normal'
                             self.choosen_fruit.remove((i,j))
-                        else:
+                        elif self.matrix[i][j]['status'] in ['normal','hint']:
                             # 如果当前元素没有被选中，则选中它
-                            self.matrix[i][j]['status'] in ['normal','hint']
                             self.matrix[i][j]['status'] = 'choosen'
                             self.choosen_fruit.add((i,j))
+                        elif self.matrix[i][j]['status'] == 'disabled':
+                            # 如果当前元素被禁用，则不做任何操作
+                            pass
+                        else:
+                            print(f'非法的状态！')
 
                         if len(self.choosen_fruit) == 2:
                             fruit1_x, fruit1_y = self.choosen_fruit.pop()
@@ -395,15 +423,15 @@ class Basic_mode:
                                 fruit2['status'] = 'normal'
 
                             # 无论是否消除，都要重置元素状态，目前等价于消除所有的hint状态
-                            self.reset_status()
+                            self.reset_status('normal')
 
-    def reset_status(self):
-        '''重置所有元素的状态为normal'''
+    def reset_status(self,status):
+        '''重置所有元素的状态为status'''
         for row in range(len(self.matrix)):
             for col in range(len(self.matrix[0])):
                 fruit = self.matrix[row][col]
                 if fruit != None:
-                    fruit['status'] = 'normal'
+                    fruit['status'] = f'{status}'
 
     def _test(self):
         '''调试专用函数，用于各种开挂功能'''
