@@ -24,8 +24,6 @@ main_menu_background = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\A
 game_background = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_bg.bmp")
 
 
-
-
 class Button:
     def __init__(self,position,rect,color=(255, 255, 255),text_color=(0, 0, 0),font=None,font_size=20,text="Button"):
         # 位置，大小属性
@@ -224,8 +222,8 @@ class Basic_mode:
         # 随机生成游戏地图
         self.row = 10
         self.col = 16
-        self.row = 2
-        self.col = 4
+        # self.row = 2
+        # self.col = 4
         self.left_fruit = self.row*self.col # 剩余水果数量
         self.game_matrix_x = 20
         self.game_matrix_y = 50
@@ -376,6 +374,8 @@ class Basic_mode:
                                         print("游戏结束")
                                         # 重启游戏
                                         start_button.enable_button()  
+                                        # 显示胜利消息
+                                        self.show_victory_message()
                                 else:
                                     print("不可以消除")
                                     # 取消选中状态
@@ -492,6 +492,16 @@ class Basic_mode:
     
     def promot(self):
         pass
+
+    def show_victory_message(self):
+        """显示胜利消息"""
+        text_color = (255, 0, 0)
+        font = pygame.font.SysFont('fangsong', 60)
+        message = font.render('你赢了！', True, text_color)
+        message_rect = message.get_rect(center=(screen_width/2, screen_height/2))
+        screen.blit(message, message_rect)
+        pygame.display.flip()
+        pygame.time.wait(2000)  # 显示消息2秒
 
 
 # 游戏主循环
