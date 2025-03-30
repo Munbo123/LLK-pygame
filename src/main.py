@@ -165,7 +165,7 @@ class Main_menu:
         button_size = (100, 50)
         basic_mode_button = Button(position=(30, 215), rect=button_size, text="基本模式",font='fangsong').draw()
         leisure_mode_button = Button(position=(30, 315), rect=button_size, text="休闲模式",font='fangsong').draw()
-        level_mode_button = Button(position=(30, 415), rect=button_size, text="关卡模式",font='fangsong').draw()
+        level_mode_button = Button(position=(30, 415), rect=button_size, text="联机模式",font='fangsong').draw()
         
         # 右下角按钮绘制
         button_size = (75, 35)
@@ -270,7 +270,7 @@ class Basic_mode:
         restart_button = Button(position=(800-100-20, 20+50+20+50+20+50+20), rect=main_button_size, text="重排",font='fangsong')
         # 右下角按钮绘制，包含设置，帮助，按照竖向排列，紧靠右下角
         setting_button = Button(position=(800-75, 600-35), rect=other_button_size, text="设置",font='fangsong')
-        help_button = Button(position=(800-75, 600-35-35-20), rect=other_button_size, text="帮助",font='fangsong')
+        help_button = Button(position=(800-75, 600-35-35-20), rect=other_button_size, text="开挂",font='fangsong')
 
 
         pause_button.disable_button() # 暂停按钮默认禁用
