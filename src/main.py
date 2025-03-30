@@ -78,8 +78,10 @@ class Progress_bar:
     def __init__(self):
         # 用于计时的变量
         self.total_time = 300 # 总时间默认300秒
-        self.start_time = None
+        self.pre_time = 0 # 上次计时的时间
+        self.remaining_time = self.total_time # 剩余时间
         self.progress_running = False
+        self.enable = True       # 进度条是否启用
         # 进度条参数
         self.bar_width = 500  # 进度条总宽度
         self.bar_height = 20
@@ -89,61 +91,49 @@ class Progress_bar:
         self.bar_border_radius = 20
 
     def draw(self):
-        if self.start_time is not None:
-            # 绘制倒计时条
-            # 计算剩余时间
-            elapsed_time = (pygame.time.get_ticks() - self.start_time) / 1000
-            remaining_time = max(0, self.total_time - elapsed_time)
-            ratio = remaining_time / self.total_time
-            current_width = int(self.bar_width * ratio)
-            pygame.draw.rect(screen, (200, 200, 200), (self.bar_x+current_width, self.bar_y, self.bar_width-current_width, self.bar_height),border_top_right_radius=self.bar_border_radius,border_bottom_right_radius=self.bar_border_radius)
-            pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, current_width, self.bar_height),border_top_left_radius=self.bar_border_radius,border_bottom_left_radius=self.bar_border_radius)
-            text = self.font.render(f"倒计时: {int(remaining_time)}秒", True, (0, 0, 0))
-            # 在进度条上方绘制倒计时文本
-            screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
-            if remaining_time <= 0:
-                print("倒计时结束")
-                self.start_time = None
-                start_button.enable_button() # 重新启用开始按钮
-                # 显示失败消息
-                text_color = (255, 0, 0)
-                font = pygame.font.SysFont('fangsong', 40)
-                message = font.render('游戏失败', True, text_color)
-                message_rect = message.get_rect(center=(screen_width/2, screen_height/2-50))
-                screen.blit(message, message_rect)
-                pygame.display.flip()
-                pygame.time.delay(2000) # 等待2秒
-                self.reset_status('disabled') # 重置所有元素的状态为normal         
-        else:
-            # 绘制一个全满的进度条,并显示倒计时为total_time
-            pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, self.bar_width, self.bar_height),border_radius=self.bar_border_radius)
-            text = self.font.render(f"倒计时: {self.total_time}秒", True, (0, 0, 0))
-            # 在进度条上侧绘制倒计时文本
-            screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
+        if not self.enable:
+            return
+        if self.progress_running:
+            # 更新剩余时间
+            self.remaining_time -= (pygame.time.get_ticks() - self.pre_time) / 1000
+            self.remaining_time = max(0, self.remaining_time)
+
+        self.pre_time = pygame.time.get_ticks() # 更新上次计时的时间
+
+        '''绘制进度条背景'''
+        # 计算进度条宽度
+        ratio = self.remaining_time / self.total_time
+        current_width = self.bar_width * ratio
+
+        # 绘制进度条
+        pygame.draw.rect(screen, (200, 200, 200), (self.bar_x+current_width, self.bar_y, self.bar_width-current_width, self.bar_height),border_top_right_radius=self.bar_border_radius,border_bottom_right_radius=self.bar_border_radius)
+        pygame.draw.rect(screen, (0, 255, 0), (self.bar_x, self.bar_y, current_width, self.bar_height),border_top_left_radius=self.bar_border_radius,border_bottom_left_radius=self.bar_border_radius)
+
+        # 绘制倒计时文本
+        text = self.font.render(f"倒计时: {int(self.remaining_time)}秒", True, (0, 0, 0))
+        # 在进度条上方绘制倒计时文本
+        screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
+
+        # 判断是否结束
+        if self.remaining_time <= 0:
+            print("倒计时结束")
+        
+        
     
     def start(self):
         '''开始计时'''
-        self.start_time = pygame.time.get_ticks()
-        self.progress_running = True
+        self.progress_running = True         
 
     def pause(self):
         '''暂停计时'''
-        if self.start_time is not None:
-            elapsed_time = (pygame.time.get_ticks() - self.start_time) / 1000
-            self.total_time -= elapsed_time
-            self.start_time = None
-            self.progress_running = False
-
-    def remaining_time(self):
-        '''返回剩余时间'''
-        if self.start_time is not None:
-            elapsed_time = (pygame.time.get_ticks() - self.start_time) / 1000
-            remaining_time = max(0, self.total_time - elapsed_time)
-            return remaining_time
-        return self.total_time
+        self.progress_running = False
 
     def set_total_time(self,total_time:int):
         self.total_time = total_time
+
+    def reset(self):
+        '''重置计时器'''
+        self.remaining_time = self.total_time
 
     def set_time(self,current_time:int):
         pass
@@ -154,6 +144,10 @@ class Progress_bar:
     def reduce_time(self,reduce_time:int):
         pass
 
+    def disable(self):
+        '''禁用进度条'''
+        self.enable = False
+        
 
 
 class Main_menu:
@@ -210,6 +204,8 @@ class Main_menu:
                     pygame.display.set_caption('欢乐连连看-基本模式')
                 if leisure_mode_button.collidepoint(event.pos):
                     print("休闲模式按钮 clicked")
+                    current_page = Leisure_mode()
+                    pygame.display.set_caption('欢乐连连看-休闲模式')
                 if level_mode_button.collidepoint(event.pos):
                     print("关卡模式按钮 clicked")
                 if chart_button.collidepoint(event.pos):
@@ -223,11 +219,11 @@ class Main_menu:
 class Basic_mode:
     def __init__(self):
         self.matrix = None
-
-
         self.init_buttons()
-
-
+        self.total_time = 300 # 总时间默认300秒
+        # 绘制进度条
+        self.progress_bar = Progress_bar()
+        self.progress_bar.set_total_time(self.total_time)
 
         '''
         游戏地图区域
@@ -276,6 +272,11 @@ class Basic_mode:
         setting_button = Button(position=(800-75, 600-35), rect=other_button_size, text="设置",font='fangsong')
         help_button = Button(position=(800-75, 600-35-35-20), rect=other_button_size, text="帮助",font='fangsong')
 
+
+        pause_button.disable_button() # 暂停按钮默认禁用
+        hint_button.disable_button() # 提示按钮默认禁用
+        restart_button.disable_button() # 重排按钮默认禁用
+
         self.buttons = {
             'start_button': start_button,
             'pause_button': pause_button,
@@ -284,7 +285,7 @@ class Basic_mode:
             'setting_button': setting_button,
             'help_button': help_button
         }
-        
+       
     def generate_game_matrix(self):
         # 随机生成游戏地图
         self.row = 10
@@ -348,6 +349,9 @@ class Basic_mode:
         help_button.draw()
 
         
+        # 绘制进度条
+        if self.progress_bar:
+            self.progress_bar.draw()
         
 
         # 绘制游戏界面时，使用水果图像
@@ -358,17 +362,27 @@ class Basic_mode:
                     fruit = self.matrix[row][col]
                     # 如果水果元素不为空，则绘制水果图像
                     if fruit != None:
-                        rect,pos,status = fruit['rect'],fruit['pos'],fruit['status']
-                        screen.blit(rect, pos)
+                        rect,pos,status = fruit['rect'],fruit['pos'],fruit['status']                     
                         if status == 'choosen':
                             # 绘制红色边框
                             selected_rect = pygame.Rect(pos, (40, 40))
                             pygame.draw.rect(screen, (255, 0, 0), selected_rect, 2)
+                            # 绘制水果图像
+                            screen.blit(rect, pos)
                         elif status == 'hint':
                             # 绘制黄色边框
                             selected_rect = pygame.Rect(pos, (40, 40))
                             pygame.draw.rect(screen, (255, 255, 0), selected_rect, 4)
+                            # 绘制水果图像
+                            screen.blit(rect, pos)
                         elif status == 'normal':
+                            # 绘制水果图像
+                            screen.blit(rect, pos)
+                        elif status == 'disabled':
+                            # 绘制水果图像（和normal不同的是后续handle中不会对点击事件做出反应，但还是得渲染）
+                            screen.blit(rect, pos)
+                        elif status == 'unvisible':
+                            # 不渲染
                             pass
         
         pygame.display.flip()
@@ -392,24 +406,58 @@ class Basic_mode:
                         print("开始游戏按钮 clicked")
                         self.generate_game_matrix()
                         start_button.disable_button()
-                        self.total_time = 10 # 总时间300秒
-                        self.start_time = pygame.time.get_ticks()
+                        if self.progress_bar:
+                            self.progress_bar.start()
+                            self.progress_bar.reset()
+                        # 启用提示按钮,启用暂停按钮,启用重排按钮
+                        pause_button.enable_button()
+                        hint_button.enable_button()
+                        restart_button.enable_button()
                     else:
                         print("开始游戏按钮 clicked, but it is disabled")
                 elif pause_button.collidepoint(event.pos):
-                    print("暂停游戏按钮 clicked")
-                    self._test()
+                    if pause_button.is_button_enabled():
+                        print("暂停/继续游戏按钮 clicked")
+                        if self.progress_bar.progress_running:
+                            self.progress_bar.pause()
+                            pause_button.text = "继续游戏"
+                            pause_button.button_text = pause_button.button_font.render(pause_button.text, True, (0, 0, 0))
+                            pause_button.draw()
+                            self.reset_status('unvisible')
+
+                            # 禁用提示按钮,禁用重排按钮
+                            hint_button.disable_button()
+                            restart_button.disable_button()
+                        else:
+                            self.progress_bar.start()
+                            pause_button.text = "暂停游戏"
+                            pause_button.button_text = pause_button.button_font.render(pause_button.text, True, (0, 0, 0))
+                            pause_button.draw()
+                            self.reset_status('normal')
+
+                            # 启用提示按钮,启用重排按钮
+                            hint_button.enable_button()
+                            restart_button.enable_button()
+                    else:
+                        print("暂停/继续游戏按钮 clicked, but it is disabled")
                 elif hint_button.collidepoint(event.pos):
-                    print("提示按钮 clicked")
-                    self.promot()
+                    if hint_button.is_button_enabled():
+                        print("提示按钮 clicked")
+                        self.promot()
+                    else:
+                        print("提示按钮 clicked, but it is disabled")
                 elif restart_button.collidepoint(event.pos):
-                    print("重排按钮 clicked")
-                    self.rearrangement()
-                    self.reset_status('normal')
+                    if restart_button.is_button_enabled(): 
+                        print("重排按钮 clicked")
+                        self.rearrangement()
+                        self.reset_status('normal')
+                    else:
+                        print("重排按钮 clicked, but it is disabled")
                 elif setting_button.collidepoint(event.pos):
                     print("设置按钮 clicked")
                 elif help_button.collidepoint(event.pos):
                     print("帮助按钮 clicked")
+                    self._test()
                 # 判断鼠标点击位置是否是水果元素内，如果是，将选中的元素周围加上红色边框
                 else:
                     # print(f"现在点击了位置：{event.pos}")
@@ -458,6 +506,7 @@ class Basic_mode:
                                     start_button.enable_button()  
                                     # 显示胜利消息
                                     self.show_victory_message()
+                                    self.progress_bar.pause()
                             else:
                                 print("不可以消除")
                                 # 取消选中状态
@@ -487,9 +536,27 @@ class Basic_mode:
         #             print(fruit['index'],end=' ')
         #     print()
 
-        # 显示开始按钮的状态
-        start_button:Button = self.buttons['start_button']
-        print(start_button.is_button_enabled())
+        # # 显示开始按钮的状态
+        # start_button:Button = self.buttons['start_button']
+        # print(start_button.is_button_enabled())
+
+        # 自动完成游戏
+        while self.left_fruit > 2:
+            temp =self.promot()
+            if temp:
+                fruit1,fruit2 = temp
+                waypoints = self.is_eliminable(fruit1,fruit2)
+                if waypoints:
+                    self.draw_clear_animation(waypoints,0.05)
+                    self.matrix[fruit1[0]][fruit1[1]] = None
+                    self.matrix[fruit2[0]][fruit2[1]] = None
+                    self.left_fruit -= 2
+                    self.draw()
+                    self.handle()
+            else:
+                print("没有可以消除的元素了")
+                break
+
 
     def is_eliminable(self, fruit1:tuple[int,int],fruit2:tuple[int,int],turns:int=2):
         '''
@@ -607,7 +674,7 @@ class Basic_mode:
                     return False
         return True
 
-    def draw_clear_animation(self,waypoints:list[tuple[int,int]]):
+    def draw_clear_animation(self,waypoints:list[tuple[int,int]],animation_time:int=0.5):
         '''绘制消除动画，消除动画为起点和终点添加红色边框，途径转折点添加绿色线'''
         # 绘制起点和终点红色边框
         start = waypoints[0]
@@ -622,7 +689,8 @@ class Basic_mode:
         # 更新屏幕
         pygame.display.flip()
         # 暂停1秒钟
-        time.sleep(0.5)
+        time.sleep(animation_time)
+        self.draw()
         # 清除事件队列
         # pygame.event.clear() 
 
@@ -677,7 +745,7 @@ class Basic_mode:
                             if waypoints:
                                 fruit1['status'] = 'hint'
                                 fruit2['status'] = 'hint'
-                                return
+                                return [(i,j),(m,n)]
         # 如果没有找到可以消除的元素，则提示没有提示信息
         print("没有可以消除的元素")
         # 提示信息显示2秒
@@ -688,6 +756,7 @@ class Basic_mode:
         screen.blit(message, message_rect)
         pygame.display.flip()
         pygame.time.wait(2000)
+        return []
 
     def show_victory_message(self):
         """显示胜利消息"""
@@ -699,6 +768,12 @@ class Basic_mode:
         pygame.display.flip()
         pygame.time.wait(2000)  # 显示消息2秒
 
+
+class Leisure_mode(Basic_mode):
+    def __init__(self):
+        super().__init__()
+        # 休闲模式不需要计时器
+        self.progress_bar.disable()
 
 # 游戏主循环
 done = False
