@@ -1,13 +1,13 @@
 import pygame
 
 class Progress_bar:
-    def __init__(self,screen:pygame.Surface):
+    def __init__(self,screen:pygame.Surface,total_time:int=300):
         # 屏幕对象
         self.screen = screen
         # 屏幕宽高
         screen_width, screen_height = screen.get_size()
         # 用于计时的变量
-        self.total_time = 300 # 总时间默认300秒
+        self.total_time = total_time # 总时间默认300秒
         self.pre_time = 0 # 上次计时的时间
         self.remaining_time = self.total_time # 剩余时间
         self.progress_running = False

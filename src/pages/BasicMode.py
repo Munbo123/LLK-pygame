@@ -2,566 +2,664 @@ import pygame
 import random
 import time
 
+from logic.matrix_logic import Matrix
 from components.Button import Button
 from components.ProgressBar import Progress_bar
+from utils.image_processor import process_fruit_sheet  # 导入新的工具函数
 
-game_background = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_bg.bmp")
+game_background_path = r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_bg.bmp"
+sheet_path = r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_element.bmp"
+mask_path = r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_mask.bmp"
 
 class Basic_mode:
     def __init__(self,screen:pygame.Surface):
-        # 屏幕对象
+        # 屏幕对象及其宽高
         self.screen = screen
         self.screen_width, self.screen_height = screen.get_size()
+
         # 游戏背景
-        self.matrix = None
+        self.background = pygame.image.load(game_background_path).convert_alpha()
+        
+        # 初始化按钮
         self.init_buttons()
-        self.total_time = 300 # 总时间默认300秒
+
         # 绘制进度条
-        self.progress_bar = Progress_bar(screen=screen)
-        self.progress_bar.set_total_time(self.total_time)
+        self.progress_bar = Progress_bar(screen=screen,total_time=300) # 总时间300秒
 
-        '''
-        游戏地图区域
-        (1) 游戏地图起始点 (50,50)，单位像素。
-        (2) 游戏地图：10 行，16 列。
-        (3) 每张图片大小：40*40，单位像素。
-        (4) 游戏地图中包含 16 种图片。(先以不同颜色的背景代替)
-        '''
-        self.fruit_sheet = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_element.bmp").convert()
-        self.fruit_mask = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_mask.bmp").convert()
-        # 将 mask.bmp 转换为透明的 Surface
-        self.processed_fruit_sheet = pygame.Surface(self.fruit_sheet.get_size(), pygame.SRCALPHA)  # 创建一个透明的 Surface
-        width,height = self.fruit_sheet.get_size()
-        for x in range(width):
-            for y in range(height):
-                # 获取像素颜色
-                pixel_color = self.fruit_sheet.get_at((x, y))
-                mask_color = self.fruit_mask.get_at((x, y))
-                # 如果 mask.bmp 中的像素颜色为白色，则设置为透明
-                if mask_color != (255, 255, 255, 255):
-                    self.processed_fruit_sheet.set_at((x, y), (0, 0, 0, 0))
-                else:
-                    self.processed_fruit_sheet.set_at((x, y), pixel_color)
-        # 将处理后的水果图集切分为10个水果图像
-        self.fruit_images = []
-        for i in range(10):
-            rect = pygame.Rect(0, i * 40, 40, 40)
-            self.fruit_images.append(self.processed_fruit_sheet.subsurface(rect).copy())  # 注意用 copy() 得到独立的 Surface
+        # 加载水果图集和遮罩图像
+        fruit_images = process_fruit_sheet(sheet_path, mask_path)  # 使用导入的工具函数
+        # 根据水果图像创建游戏地图
+        self.game_map = Matrix(row=10,col=16,elements=fruit_images)
+        
+        # 初始时将所有元素设置为不可见状态
+        self.set_all_status('unvisible')
 
-        # # 将切好的图片保存到当前目录
-        # cnt = 0
-        # for fruit_image in self.fruit_images:
-        #     pygame.image.save(fruit_image, os.path.join(os.getcwd(), f"fruit_{cnt}.png"))
-        #     cnt += 1
+        # 初始化已选水果集合
+        self.choosen_fruit = set()
+        
+        # 初始化动画列表，用于存储消除动画的路径
+        # 每个动画包含：path(路径点列表)、color(绘制颜色)、expire(存活时间)
+        self.animations = []
+        
+        # 记录上一帧的时间，用于计算时间差
+        self.last_time = pygame.time.get_ticks() / 1000.0
+        
+        # 添加自动消除状态标志
+        self.auto_eliminating = False
 
     def init_buttons(self):
-        # 绘制按钮
+        # 定义按钮尺寸
         main_button_size = (100, 50)
         other_button_size = (75, 35)
+
         # 基本游戏功能按钮，包含开始游戏，暂停游戏，提示，重排，位于屏幕右侧位置，右边距约20像素，竖向排列，按钮之间间距约20像素
-        start_button = Button(screen=self.screen,position=(800-100-20, 20), rect=main_button_size, text="开始游戏",font='fangsong')
-        pause_button = Button(screen=self.screen,position=(800-100-20, 20+50+20), rect=main_button_size, text="暂停游戏",font='fangsong')
-        hint_button = Button(screen=self.screen,position=(800-100-20, 20+50+20+50+20), rect=main_button_size, text="提示",font='fangsong')
-        restart_button = Button(screen=self.screen,position=(800-100-20, 20+50+20+50+20+50+20), rect=main_button_size, text="重排",font='fangsong')
-        # 右下角按钮绘制，包含设置，帮助，按照竖向排列，紧靠右下角
-        setting_button = Button(screen=self.screen,position=(800-75, 600-35), rect=other_button_size, text="设置",font='fangsong')
-        help_button = Button(screen=self.screen,position=(800-75, 600-35-35-20), rect=other_button_size, text="开挂",font='fangsong')
+        # 右下角按钮，包含设置，帮助，按照竖向排列，紧靠右下角
+
+        # 开始按钮
+        self.start_button = Button(screen=self.screen,position=(800-100-20, 20), rect=main_button_size, text="开始游戏",font='fangsong')
+        # 暂停按钮
+        self.pause_button = Button(screen=self.screen,position=(800-100-20, 20+50+20), rect=main_button_size, text="暂停游戏",font='fangsong')
+        # 提示按钮
+        self.promote_button = Button(screen=self.screen,position=(800-100-20, 20+50+20+50+20), rect=main_button_size, text="提示",font='fangsong')
+        # 重排按钮
+        self.rearrange_button = Button(screen=self.screen,position=(800-100-20, 20+50+20+50+20+50+20), rect=main_button_size, text="重排",font='fangsong')
+        # 设置按钮
+        self.setting_button = Button(screen=self.screen,position=(800-75, 600-35), rect=other_button_size, text="设置",font='fangsong')
+        # 自动按钮(原帮助按钮)
+        self.auto_eliminate_button = Button(screen=self.screen,position=(800-75, 600-35-35-20), rect=other_button_size, text="自动",font='fangsong')
 
 
-        pause_button.disable_button() # 暂停按钮默认禁用
-        hint_button.disable_button() # 提示按钮默认禁用
-        restart_button.disable_button() # 重排按钮默认禁用
+        self.pause_button.disable_button() # 暂停按钮默认禁用
+        self.promote_button.disable_button() # 提示按钮默认禁用
+        self.rearrange_button.disable_button() # 重排按钮默认禁用
 
-        self.buttons = {
-            'start_button': start_button,
-            'pause_button': pause_button,
-            'hint_button': hint_button,
-            'restart_button': restart_button,
-            'setting_button': setting_button,
-            'help_button': help_button
-        }
-       
-    def generate_game_matrix(self):
-        # 随机生成游戏地图
-        self.row = 10
-        self.col = 16
-        # self.row = 2
-        # self.col = 4
-        self.left_fruit = self.row*self.col # 剩余水果数量
-        self.game_matrix_x = 20
-        self.game_matrix_y = 50
-        self.choosen_fruit = set() # 选中元素的坐标集合
-        self.matrix = [[None]*self.col for _ in range(self.row)] # 10行16列的矩阵
-
-        fruits_temp = [] # 临时存储水果图像索引
-        for i in range(self.row*self.col//2):
-            # 同时生成两个相同的水果图像索引
-            add_fruit = random.randint(0,len(self.fruit_images)-1)
-            fruits_temp.append(add_fruit)
-            fruits_temp.append(add_fruit)
-        # 打乱水果图像索引
-        random.shuffle(fruits_temp)
-  
-        # 将水果图像索引填入矩阵
-        cnt = 0
-        for i in range(self.row):
-            for j in range(self.col):
-                # 随机选择水果图像
-                fruit_image_index = fruits_temp[cnt]
-                cnt += 1
-                # 计算水果图像在屏幕上的位置
-                pos_x = self.game_matrix_x + j * 40
-                pos_y = self.game_matrix_y + i * 40
-                # 水果图像rect
-                rect = self.fruit_images[fruit_image_index]
-                self.matrix[i][j] = {
-                    'rect' : rect,
-                    'pos' : (pos_x, pos_y),
-                    'index' : fruit_image_index,
-                    'status' : 'normal'       # 是否被选中
-                }
-        
     def draw(self):
         # 清屏
         self.screen.fill((255, 255, 255))
 
         # 绘制背景
-        self.screen.blit(game_background, (0, 0))
+        self.screen.blit(self.background, (0, 0))
 
         # 绘制按钮
-        start_button:Button = self.buttons['start_button']
-        pause_button:Button = self.buttons['pause_button']
-        hint_button:Button = self.buttons['hint_button']
-        restart_button:Button = self.buttons['restart_button']
-        setting_button:Button = self.buttons['setting_button']
-        help_button:Button = self.buttons['help_button']
-        
-        start_button.draw()
-        pause_button.draw()
-        hint_button.draw()
-        restart_button.draw()
-        setting_button.draw()
-        help_button.draw()
-
+        self.start_button.draw()
+        self.pause_button.draw()
+        self.promote_button.draw()
+        self.rearrange_button.draw()
+        self.setting_button.draw()
+        self.auto_eliminate_button.draw()
         
         # 绘制进度条
         if self.progress_bar:
             self.progress_bar.draw()
         
+        # 定义游戏矩阵的起始坐标
+        self.game_matrix_x = 20
+        self.game_matrix_y = 50
+        
+        #获取每个元素的长宽
+        element_width, element_height = self.game_map.get_elements_width(), self.game_map.get_elements_height()
 
         # 绘制游戏界面时，使用水果图像
-        if self.matrix:
-            # 绘制游戏界面时，使用水果图像
-            for row in range(len(self.matrix)):
-                for col in range(len(self.matrix[0])):
-                    fruit = self.matrix[row][col]
-                    # 如果水果元素不为空，则绘制水果图像
-                    if fruit != None:
-                        rect,pos,status = fruit['rect'],fruit['pos'],fruit['status']                     
-                        if status == 'choosen':
-                            # 绘制红色边框
-                            selected_rect = pygame.Rect(pos, (40, 40))
-                            pygame.draw.rect(self.screen, (255, 0, 0), selected_rect, 2)
-                            # 绘制水果图像
-                            self.screen.blit(rect, pos)
-                        elif status == 'hint':
-                            # 绘制黄色边框
-                            selected_rect = pygame.Rect(pos, (40, 40))
-                            pygame.draw.rect(self.screen, (255, 255, 0), selected_rect, 4)
-                            # 绘制水果图像
-                            self.screen.blit(rect, pos)
-                        elif status == 'normal':
-                            # 绘制水果图像
-                            self.screen.blit(rect, pos)
-                        elif status == 'disabled':
-                            # 绘制水果图像（和normal不同的是后续handle中不会对点击事件做出反应，但还是得渲染）
-                            self.screen.blit(rect, pos)
-                        elif status == 'unvisible':
-                            # 不渲染
-                            pass
-        
+        for row in range(self.game_map.get_row()):
+            for col in range(self.game_map.get_col()):
+                # 获取水果元素和其属性
+                fruit = self.game_map.get_cell(row,col)
+                index,status = fruit['index'],fruit['status']
+                fruit_suface = self.game_map.get_elements(index)
+                pos_x = self.game_matrix_x + col * element_width
+                pos_y = self.game_matrix_y + row * element_height
+
+                # 根据元素的status属性绘制水果图像
+                if status == 'normal':
+                    self.screen.blit(fruit_suface, (pos_x, pos_y))
+                elif status in ['choosen','eliminating']:
+                    # 绘制红色边框
+                    selected_rect = pygame.Rect((pos_x, pos_y), (40, 40))
+                    pygame.draw.rect(self.screen, (255, 0, 0), selected_rect, 2)
+                    # 绘制水果图像
+                    self.screen.blit(fruit_suface, (pos_x, pos_y))
+                elif status == 'promote':
+                    # 绘制黄色边框
+                    selected_rect = pygame.Rect((pos_x, pos_y), (40, 40))
+                    pygame.draw.rect(self.screen, (255, 255, 0), selected_rect, 4)
+                    # 绘制水果图像
+                    self.screen.blit(fruit_suface, (pos_x, pos_y))
+                elif status == 'disabled':
+                    # 绘制水果图像（和normal不同的是后续handle中不会对点击事件做出反应，但还是得渲染）
+                    self.screen.blit(fruit_suface, (pos_x, pos_y))
+                elif status in ['unvisible','eliminated']:
+                    # 不渲染
+                    pass
+
+        # 绘制所有当前动画效果
+        for animation in self.animations:
+            animation_type = animation.get('type', 'path')  # 默认为路径类型
+            
+            if animation_type == 'path':
+                # 绘制路径动画
+                path = animation['path']
+                color = animation['color']
+                
+                # 只有至少有两个点的路径才能绘制
+                if len(path) >= 2:
+                    # 绘制路径连线
+                    for i in range(len(path) - 1):
+                        start_row, start_col = path[i]
+                        end_row, end_col = path[i + 1]
+                        
+                        # 计算像素坐标
+                        start_x = self.game_matrix_x + start_col * element_width + element_width // 2
+                        start_y = self.game_matrix_y + start_row * element_height + element_height // 2
+                        end_x = self.game_matrix_x + end_col * element_width + element_width // 2
+                        end_y = self.game_matrix_y + end_row * element_height + element_height // 2
+                        
+                        # 绘制路径线
+                        pygame.draw.line(self.screen, color, (start_x, start_y), (end_x, end_y), 3)
+                        
+                        # 在路径点绘制小圆点
+                        pygame.draw.circle(self.screen, (0, 0, 255), (start_x, start_y), 5)
+                    
+                    # 绘制最后一个点
+                    last_row, last_col = path[-1]
+                    last_x = self.game_matrix_x + last_col * element_width + element_width // 2
+                    last_y = self.game_matrix_y + last_row * element_height + element_height // 2
+                    pygame.draw.circle(self.screen, (0, 0, 255), (last_x, last_y), 5)
+                    
+            elif animation_type == 'victory_text':
+                # 绘制胜利文字动画
+                text = animation['text']
+                color = animation['color']
+                font_size = animation['font_size']
+                
+                # 创建字体对象
+                font = pygame.font.SysFont('fangsong', font_size)
+                text_surface = font.render(text, True, color)
+                
+                # 计算文字的位置（居中显示）
+                text_rect = text_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
+                
+                # 绘制文字
+                self.screen.blit(text_surface, text_rect)
+
         pygame.display.flip()
 
     def handle(self):
         done,current_page = False,None
-        start_button:Button = self.buttons['start_button'] 
-        pause_button:Button = self.buttons['pause_button']
-        hint_button:Button = self.buttons['hint_button']
-        restart_button:Button = self.buttons['restart_button']
-        setting_button:Button = self.buttons['setting_button']
-        help_button:Button = self.buttons['help_button']
+
+        # 计算时间增量
+        current_time = pygame.time.get_ticks() / 1000.0
+        delta_time = current_time - self.last_time
+        self.last_time = current_time
+        
+        # 更新所有动画的存活时间，移除过期的动画
+        i = 0
+        while i < len(self.animations):
+            self.animations[i]['expire'] -= delta_time
+            if self.animations[i]['expire'] <= 0:
+                # 动画结束时，如果有回调函数，则执行
+                animation = self.animations[i]
+                if animation['callback'] is not None:
+                    animation['callback'](*animation['callback_args'])
+                # 移除过期动画
+                self.animations.pop(i)
+            else:
+                i += 1
+        
+        # 如果所有动画已结束且处于自动消除状态，执行下一次自动消除
+        if self.auto_eliminating and len(self.animations) == 0:
+            self.perform_single_auto_elimination()
+
+        # 从game_map中获取行列数，元素长宽，计算矩阵的范围
+        rect = pygame.Rect(self.game_matrix_x, self.game_matrix_y, self.game_map.get_col()*self.game_map.get_elements_width(), self.game_map.get_row()*self.game_map.get_elements_height())
         # 处理事件
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
             if event.type == pygame.MOUSEBUTTONDOWN:
-                # 判断鼠标点击位置是否在按钮区域内
-                if start_button.collidepoint(event.pos):
-                    if start_button.is_button_enabled():
-                        print("开始游戏按钮 clicked")
-                        self.generate_game_matrix()
-                        start_button.disable_button()
-                        if self.progress_bar:
-                            self.progress_bar.start()
-                            self.progress_bar.reset()
-                        # 启用提示按钮,启用暂停按钮,启用重排按钮
-                        pause_button.enable_button()
-                        hint_button.enable_button()
-                        restart_button.enable_button()
-                    else:
-                        print("开始游戏按钮 clicked, but it is disabled")
-                elif pause_button.collidepoint(event.pos):
-                    if pause_button.is_button_enabled():
-                        print("暂停/继续游戏按钮 clicked")
-                        if self.progress_bar.progress_running:
-                            self.progress_bar.pause()
-                            pause_button.text = "继续游戏"
-                            pause_button.button_text = pause_button.button_font.render(pause_button.text, True, (0, 0, 0))
-                            pause_button.draw()
-                            self.reset_status('unvisible')
-
-                            # 禁用提示按钮,禁用重排按钮
-                            hint_button.disable_button()
-                            restart_button.disable_button()
-                        else:
-                            self.progress_bar.start()
-                            pause_button.text = "暂停游戏"
-                            pause_button.button_text = pause_button.button_font.render(pause_button.text, True, (0, 0, 0))
-                            pause_button.draw()
-                            self.reset_status('normal')
-
-                            # 启用提示按钮,启用重排按钮
-                            hint_button.enable_button()
-                            restart_button.enable_button()
-                    else:
-                        print("暂停/继续游戏按钮 clicked, but it is disabled")
-                elif hint_button.collidepoint(event.pos):
-                    if hint_button.is_button_enabled():
-                        print("提示按钮 clicked")
-                        self.promot()
-                    else:
-                        print("提示按钮 clicked, but it is disabled")
-                elif restart_button.collidepoint(event.pos):
-                    if restart_button.is_button_enabled(): 
-                        print("重排按钮 clicked")
-                        self.rearrangement()
-                        self.reset_status('normal')
-                    else:
-                        print("重排按钮 clicked, but it is disabled")
-                elif setting_button.collidepoint(event.pos):
-                    print("设置按钮 clicked")
-                elif help_button.collidepoint(event.pos):
-                    print("帮助按钮 clicked")
-                    self._test()
-                # 判断鼠标点击位置是否是水果元素内，如果是，将选中的元素周围加上红色边框
-                else:
+                # 开始按钮
+                if self.start_button.collidepoint(event.pos):
+                    self.start_button_event()
+                # 暂停按钮
+                elif self.pause_button.collidepoint(event.pos):
+                    self.pause_button_event()
+                # 提示按钮
+                elif self.promote_button.collidepoint(event.pos):
+                    self.promote_button_event()
+                # 重排按钮
+                elif self.rearrange_button.collidepoint(event.pos):
+                    self.rearrange_button_event()
+                # 设置按钮
+                elif self.setting_button.collidepoint(event.pos):
+                    self.setting_button_event()
+                # 自动按钮
+                elif self.auto_eliminate_button.collidepoint(event.pos):
+                    self.auto_eliminate_button_event()
+                # 判断鼠标点击位置是否是水果元素内
+                elif rect.collidepoint(event.pos):
                     # print(f"现在点击了位置：{event.pos}")
-                    i = int((event.pos[1]-self.game_matrix_y) / 40) # 选中行数
-                    j = int((event.pos[0]-self.game_matrix_x) / 40) # 选中列数
-                    # print(f"现在点击了行：{i}，列：{j}")
-                    # 修改选中元素的status属性
-                    if i >= 0 and i < self.row and j >= 0 and j < self.col and self.matrix[i][j]!=None:
-                        if self.matrix[i][j]['status'] == 'choosen':
-                            # 如果当前元素已经被选中，则取消选中
-                            self.matrix[i][j]['status'] = 'normal'
-                            self.choosen_fruit.remove((i,j))
-                        elif self.matrix[i][j]['status'] in ['normal','hint']:
-                            # 如果当前元素没有被选中，则选中它
-                            self.matrix[i][j]['status'] = 'choosen'
-                            self.choosen_fruit.add((i,j))
-                        elif self.matrix[i][j]['status'] == 'disabled':
-                            # 如果当前元素被禁用，则不做任何操作
-                            pass
+                    row = int((event.pos[1]-self.game_matrix_y) / self.game_map.get_elements_height()) # 选中行数
+                    col = int((event.pos[0]-self.game_matrix_x) / self.game_map.get_elements_width()) # 选中列数
+                    print(f"现在点击了行：{row}，列：{col}")
+                    # 获取矩阵元素
+                    fruit = self.game_map.get_cell(row,col)
+                    index,status = fruit['index'],fruit['status']
+                    if status == 'normal':
+                        # 如果当前元素是正常状态，则选中它
+                        self.game_map.set_status(row,col,'choosen')
+                        self.choosen_fruit.add((row,col))
+                    elif status == 'choosen':
+                        # 如果当前元素已经被选中，则取消选中
+                        self.game_map.set_status(row,col,'normal')
+                        self.choosen_fruit.remove((row,col))
+                    elif status == 'promote':
+                        # 如果当前元素是提示状态，则改成选中状态，并添加到选中集合
+                        self.game_map.set_status(row,col,'choosen')
+                        self.choosen_fruit.add((row,col))
+                    elif status == 'eliminating':
+                        # 如果当前元素正在消除状态，则不做任何操作
+                        pass
+                    else:
+                        print(f"非法状态{status}")
+
+                    # 如果选中元素数量为2，则判断是否可以消除
+                    if len(self.choosen_fruit) == 2:
+                        fruit1, fruit2 = list(self.choosen_fruit)
+                        self.choosen_fruit.clear()  # 清空选中集合
+                        # 获取消除路径
+                        path = self.game_map.is_eliminable(fruit1[0], fruit1[1], fruit2[0], fruit2[1])
+                        
+                        if path:
+                            # 停止自动消除状态
+                            if self.auto_eliminating:
+                                self.auto_eliminating = False
+                                self.auto_eliminate_button.text = "自动"
+                                self.auto_eliminate_button.button_text = self.auto_eliminate_button.button_font.render(self.auto_eliminate_button.text, True, (0, 0, 0))
+                                self.auto_eliminate_button.draw()
+                            
+                            # 移除所有提示动画
+                            self.remove_promote_animations()
+                            # 重置所有提示状态
+                            self.reset_promote_status()
+                            
+                            # 创建一个消除回调函数用于动画结束后消除元素
+                            def eliminate_callback(row1, col1, row2, col2):
+                                self.game_map.eliminate_cell(row1, col1)
+                                self.game_map.eliminate_cell(row2, col2)
+                                
+                                # 检查是否已经消除所有元素
+                                if self.game_map.get_left_elements() == 0:
+                                    # 游戏胜利，添加胜利动画
+                                    self.show_victory_animation()
+                                
+                            # 添加消除动画，包含回调函数，持续时间为1秒
+                            self.add_elimination_animation(
+                                path, 
+                                color=(0, 255, 0), 
+                                expire_time=1.0,
+                                callback=eliminate_callback,
+                                callback_args=(fruit1[0], fruit1[1], fruit2[0], fruit2[1]),
+                                animation_type='elimination'
+                            )
+                            
+                            # 让元素在动画期间显示'eliminating'状态，以保持红框显示
+                            self.game_map.set_status(fruit1[0], fruit1[1], 'eliminating')
+                            self.game_map.set_status(fruit2[0], fruit2[1], 'eliminating')
                         else:
-                            print(f'非法的状态！')
+                            # 取消选中状态
+                            self.game_map.set_status(fruit1[0], fruit1[1], 'normal')
+                            self.game_map.set_status(fruit2[0], fruit2[1], 'normal')
 
-                        if len(self.choosen_fruit) == 2:
-                            fruit1_x, fruit1_y = self.choosen_fruit.pop()
-                            fruit2_x, fruit2_y = self.choosen_fruit.pop()
-                            fruit1 = self.matrix[fruit1_x][fruit1_y]
-                            fruit2 = self.matrix[fruit2_x][fruit2_y]
-                            # 判断两个水果元素是否可以消除，可以则返回路径点列表，不可以则返回空列表
-                            if fruit1['index'] != fruit2['index']:
-                                waypoints = []
-                            else:
-                                waypoints = self.is_eliminable((fruit1_x,fruit1_y),(fruit2_x,fruit2_y))
-                            print(waypoints)
-                            if waypoints:
-                                print("可以消除")
-                                # 消除水果元素
-                                self.matrix[fruit1_x][fruit1_y] = None
-                                self.matrix[fruit2_x][fruit2_y] = None
-                                # 绘制消除界面
-                                self.draw_clear_animation(waypoints)
-                                self.left_fruit -= 2
-                                # 判断游戏是否结束
-                                if self.left_fruit == 0:
-                                    print("游戏结束")
-                                    # 重启游戏
-                                    start_button.enable_button()  
-                                    # 显示胜利消息
-                                    self.show_victory_message()
-                                    self.progress_bar.pause()
-                            else:
-                                print("不可以消除")
-                                # 取消选中状态
-                                fruit1['status'] = 'normal'
-                                fruit2['status'] = 'normal'
-
-                            # 无论是否消除，都要重置元素状态，目前等价于消除所有的hint状态
-                            self.reset_status('normal')
-        
         return current_page, done
 
-    def reset_status(self,status):
-        '''重置所有元素的状态为status'''
-        for row in range(len(self.matrix)):
-            for col in range(len(self.matrix[0])):
-                fruit = self.matrix[row][col]
-                if fruit != None:
-                    fruit['status'] = f'{status}'
+    def start_button_event(self):
+        if self.start_button.is_button_enabled():
+            print("开始游戏按钮 clicked")
+            self.start_button.disable_button()
+            
+            # 重新初始化游戏矩阵，生成新的地图
+            fruit_images = process_fruit_sheet(sheet_path, mask_path)
+            self.game_map = Matrix(row=10, col=16, elements=fruit_images)
+            
+            # 将所有元素设置为显示状态
+            self.set_all_status('normal')
+            
+            # 清空选中水果集合和动画列表
+            self.choosen_fruit.clear()
+            self.animations.clear()
+            
+            if self.progress_bar:
+                self.progress_bar.start()
+                self.progress_bar.reset()
+            # 启用提示按钮,启用暂停按钮,启用重排按钮
+            self.pause_button.enable_button()
+            self.promote_button.enable_button()
+            self.rearrange_button.enable_button()
+        else:
+            print("开始游戏按钮 clicked, but it is disabled")
 
-    def _test(self):
-        '''调试专用函数，用于各种开挂功能'''
-        # # 输出整个矩阵
-        # for i in range(len(self.matrix)):
-        #     for j in range(len(self.matrix[0])):
-        #         fruit = self.matrix[i][j]
-        #         if fruit == None:
-        #             print('None',end=' ')
-        #         else:
-        #             print(fruit['index'],end=' ')
-        #     print()
+    def pause_button_event(self):
+        if self.pause_button.is_button_enabled():
+            print("暂停/继续游戏按钮 clicked")
+            if self.progress_bar.progress_running:
+                self.progress_bar.pause()
+                self.pause_button.text = "继续游戏"
+                self.pause_button.button_text = self.pause_button.button_font.render(self.pause_button.text, True, (0, 0, 0))
+                self.pause_button.draw()
+                self.set_all_status('unvisible')
 
-        # # 显示开始按钮的状态
-        # start_button:Button = self.buttons['start_button']
-        # print(start_button.is_button_enabled())
-
-        # 自动完成游戏
-        while self.left_fruit > 2:
-            temp =self.promot()
-            if temp:
-                fruit1,fruit2 = temp
-                waypoints = self.is_eliminable(fruit1,fruit2)
-                if waypoints:
-                    self.draw_clear_animation(waypoints,0.05)
-                    self.matrix[fruit1[0]][fruit1[1]] = None
-                    self.matrix[fruit2[0]][fruit2[1]] = None
-                    self.left_fruit -= 2
-                    self.draw()
-                    self.handle()
+                # 禁用提示按钮,禁用重排按钮
+                self.promote_button.disable_button()
+                self.rearrange_button.disable_button()
             else:
-                print("没有可以消除的元素了")
-                break
+                self.progress_bar.start()
+                self.pause_button.text = "暂停游戏"
+                self.pause_button.button_text = self.pause_button.button_font.render(self.pause_button.text, True, (0, 0, 0))
+                self.pause_button.draw()
+                self.set_all_status('normal')
 
+                # 启用提示按钮,启用重排按钮
+                self.promote_button.enable_button()
+                self.rearrange_button.enable_button()
+        else:
+            print("暂停/继续游戏按钮 clicked, but it is disabled")
 
-    def is_eliminable(self, fruit1:tuple[int,int],fruit2:tuple[int,int],turns:int=2):
-        '''
-        判断两个水果元素是否可以消除,如果可以消除，返回True和消除路线的途径转折点（按顺序，包括起点和终点）
-        '''
-        waypoints = []   
-        if turns == 0:
-            # 不能有转折，直接判断是否在同一行或者同一列，且没有障碍物
-            if fruit1[0] == fruit2[0] or fruit1[1] == fruit2[1]:
-                if self.is_clear_path(fruit1, fruit2):
-                    waypoints.append(fruit1)
-                    waypoints.append(fruit2)
-                    return waypoints
-
-        elif turns == 1:
-            # 只能有一个转折,遍历转折点，判断（fruit1,转折点）和（转折点,fruit2）是否有障碍物
-            # 转折点只有两个选项
-            turn1 = (fruit1[0], fruit2[1])
-            turn2 = (fruit2[0], fruit1[1])
-            if self.matrix[turn1[0]][turn1[1]]==None and self.is_clear_path(fruit1, turn1) and self.is_clear_path(turn1, fruit2):
-                waypoints.append(fruit1)
-                waypoints.append(turn1)
-                waypoints.append(fruit2)
-                return waypoints
-            if self.matrix[turn2[0]][turn2[1]]==None and self.is_clear_path(fruit1, turn2) and self.is_clear_path(turn2, fruit2):
-                waypoints.append(fruit1)
-                waypoints.append(turn2)
-                waypoints.append(fruit2)
-                return waypoints
-        elif turns == 2:
-            # 先从起点开始，往四个方向遍历第一个转折点，然后递归调用自己，判断从第一个转折点到终点是否存在路径
-            # 向上
-            ans_0 = self.is_eliminable(fruit1,fruit2,0)
-            if ans_0:
-                return ans_0
+    def promote_button_event(self):
+        if self.promote_button.is_button_enabled():
+            print("提示按钮 clicked")
+            """使用game_map的promote函数寻找可消除的元素对，并标记为提示状态"""
+            # 首先重置所有提示状态
+            self.reset_promote_status()
             
-            ans_1 = self.is_eliminable(fruit1,fruit2,1)
-            if ans_1:
-                return ans_1
-
-            # 向上
-            x,y = fruit1
-            x-=1
-            while x>=0:
-                turn1 = (x,y)
-                if self.matrix[x][y] != None:
-                    break
-                else:
-                    temp = self.is_eliminable(turn1, fruit2, 1)
-                    if temp:
-                        waypoints.append(fruit1)
-                        waypoints.extend(temp)
-                        return waypoints
-                x -= 1
-
-            # 向下
-            x,y = fruit1
-            x+=1
-            while x<self.row:
-                turn1 = (x,y)
-                if self.matrix[x][y] != None:
-                    break
-                else:
-                    temp = self.is_eliminable(turn1, fruit2, 1)
-                    if temp:
-                        waypoints.append(fruit1)
-                        waypoints.extend(temp)
-                        return waypoints
-                x += 1
+            # 移除所有现有的提示动画
+            self.remove_promote_animations()
             
-            # 向左
-            x,y = fruit1
-            y-=1
-            while y>=0:
-                turn1 = (x,y)
-                if self.matrix[x][y] != None:
-                    break
-                else:
-                    temp = self.is_eliminable(turn1, fruit2, 1)
-                    if temp:
-                        waypoints.append(fruit1)
-                        waypoints.extend(temp)
-                        return waypoints
-                y -= 1
+            # 寻找可消除的元素对
+            path = self.game_map.promote()
             
-            # 向右
-            x,y = fruit1
-            y+=1
-            while y<self.col:
-                turn1 = (x,y)
-                if self.matrix[x][y] != None:
-                    break
-                else:
-                    temp = self.is_eliminable(turn1, fruit2, 1)
-                    if temp:
-                        waypoints.append(fruit1)
-                        waypoints.extend(temp)
-                        return waypoints
-                y += 1
-        return waypoints
+            if path and len(path) >= 2:
+                # 获取起点和终点
+                start_row, start_col = path[0]
+                end_row, end_col = path[-1]
                 
-    def is_clear_path(self,start:tuple[int,int],end:tuple[int,int]):
-        '''判断两个点之间是否有障碍物，两个点必须有一个坐标相同,不包含起点和终点'''
-        if (start[0] != end[0]) and (start[1] != end[1]):
-            return False
-        elif start[0] == end[0]:
-            for i in range(min(start[1], end[1])+1, max(start[1], end[1])):
-                # 需要排除起点和终点
-                if self.matrix[start[0]][i] != None:
-                    return False
-        elif start[1] == end[1]:
-            for i in range(min(start[0], end[0])+1, max(start[0], end[0])):
-                # 需要排除起点和终点
-                if self.matrix[i][start[1]] != None:
-                    return False
-        return True
-
-    def draw_clear_animation(self,waypoints:list[tuple[int,int]],animation_time:int=0.5):
-        '''绘制消除动画，消除动画为起点和终点添加红色边框，途径转折点添加绿色线'''
-        # 绘制起点和终点红色边框
-        start = waypoints[0]
-        end = waypoints[-1]
-        start_rect = pygame.Rect((start[1]*40+20, start[0]*40+50), (40, 40))
-        end_rect = pygame.Rect((end[1]*40+20, end[0]*40+50), (40, 40))
-        pygame.draw.rect(self.screen, (255, 0, 0), start_rect, 2)
-        pygame.draw.rect(self.screen, (255, 0, 0), end_rect, 2)
-        # 绘制途径转折点绿色线
-        for i in range(len(waypoints)-1):
-            pygame.draw.line(self.screen, (0, 255, 0), (waypoints[i][1]*40+20+20, waypoints[i][0]*40+50+20), (waypoints[i+1][1]*40+20+20, waypoints[i+1][0]*40+50+20), 5)
-        # 更新屏幕
-        pygame.display.flip()
-        # 暂停1秒钟
-        time.sleep(animation_time)
-        self.draw()
-        # 清除事件队列
-        # pygame.event.clear() 
-
-    def rearrangement(self):
-        '''重排游戏地图（不是重新生成）'''
-        if self.matrix == None:
-            return
-        # 将矩阵展平为一维数组并打乱元素顺序：
-        row = len(self.matrix)
-        col = len(self.matrix[0])
-        flat_list = []        
-        for i in range(row):
-            flat_list.extend(self.matrix[i])
-        random.shuffle(flat_list)
-        # 将打乱后的元素重新填入矩阵
-        cnt = 0
-        # 防止选中元素没更新导致错误
-        self.choosen_fruit.clear()
-        for i in range(row):
-            for j in range(col):
-                pos_x = self.game_matrix_x + j * 40
-                pos_y = self.game_matrix_y + i * 40
-                if flat_list[cnt] != None:
-                    self.matrix[i][j] = flat_list[cnt]
-                    self.matrix[i][j]['pos'] = (pos_x, pos_y)
-                    if self.matrix[i][j]['status'] == 'choosen':
-                        self.choosen_fruit.add((i,j))
-                else:
-                    self.matrix[i][j] = None
-                cnt += 1
+                # 将这两个元素设置为promote状态
+                self.game_map.set_status(start_row, start_col, 'promote')
+                self.game_map.set_status(end_row, end_col, 'promote')
+                
+                # 添加提示动画，过期时间设为无穷大（float('inf')）
+                self.add_elimination_animation(
+                    path, 
+                    color=(255, 255, 0), 
+                    expire_time=float('inf'),
+                    animation_type='promote'  # 标记为提示动画类型
+                )
+                
+                return True
+            else:
+                # 如果没有找到可消除的元素对，显示提示信息
+                print("没有可以消除的元素对")
+                return False
+        else:
+            print("提示按钮 clicked, but it is disabled")
     
-    def promot(self):
-        '''遍历矩阵，寻找两个可以消除的元素,并且标黄'''
-        for i in range(len(self.matrix)):
-            if self.matrix[i] == None:
-                continue
-            for j in range(len(self.matrix[0])):
-                if self.matrix[i][j] == None:
-                    continue
-                fruit1 = self.matrix[i][j]
-                # 遍历剩余元素
-                for m in range(len(self.matrix)):
-                    for n in range(len(self.matrix[0])):
-                        if m==i and n==j or self.matrix[m][n] == None:
-                            continue
-                        fruit2 = self.matrix[m][n]
-                        # 先要确保两个水果的种类相同
-                        if fruit2['index'] != fruit1['index']:
-                            continue
-                        else:
-                            waypoints = self.is_eliminable((i,j),(m,n))
-                            if waypoints:
-                                fruit1['status'] = 'hint'
-                                fruit2['status'] = 'hint'
-                                return [(i,j),(m,n)]
-        # 如果没有找到可以消除的元素，则提示没有提示信息
-        print("没有可以消除的元素")
-        # 提示信息显示2秒
-        text_color = (255, 255, 255)
-        font = pygame.font.SysFont('fangsong', 40)
-        message = font.render('没有可以消除的元素', True, text_color)
-        message_rect = message.get_rect(center=(self.screen_width/2, self.screen_height/2-50))
-        self.screen.blit(message, message_rect)
-        pygame.display.flip()
-        pygame.time.wait(2000)
-        return []
+    def rearrange_button_event(self):
+        if self.rearrange_button.is_button_enabled(): 
+            print("重排按钮 clicked")
+            """重排矩阵中的元素"""
+            # 调用game_map的rearrange_matrix方法
+            self.game_map.rearrange_matrix()
+            
+            # 清空选中水果集合
+            self.choosen_fruit.clear()
+            
+            # 清空动画列表
+            self.animations.clear()
+            self.set_all_status('normal')
+        else:
+            print("重排按钮 clicked, but it is disabled")
 
-    def show_victory_message(self):
-        """显示胜利消息"""
-        text_color = (255, 0, 0)
-        font = pygame.font.SysFont('fangsong', 60)
-        message = font.render('你赢了！', True, text_color)
-        message_rect = message.get_rect(center=(self.screen_width/2, self.screen_height/2))
-        self.screen.blit(message, message_rect)
-        pygame.display.flip()
-        pygame.time.wait(2000)  # 显示消息2秒
+    def setting_button_event(self):
+        print("设置按钮 clicked")
+
+    def auto_eliminate_button_event(self):
+        print("自动按钮 clicked")
+        
+        # 检查是否处于游戏进行中的状态（只有游戏开始后才能使用帮助功能）
+        if not self.pause_button.is_button_enabled():
+            print("游戏未开始或已暂停，无法使用帮助功能")
+            return
+            
+        # 检查剩余元素数量，如果只剩下两个或更少的元素，则不执行自动消除
+        if self.game_map.get_left_elements() <= 2:
+            print("只剩下最后两个元素，无法继续自动消除")
+            return
+            
+        # 切换自动消除状态
+        self.auto_eliminating = not self.auto_eliminating
+        
+        # 根据当前状态更新帮助按钮文本
+        if self.auto_eliminating:
+            self.auto_eliminate_button.text = "停止自动"
+            self.auto_eliminate_button.button_text = self.auto_eliminate_button.button_font.render(self.auto_eliminate_button.text, True, (0, 0, 0))
+            self.auto_eliminate_button.draw()
+            
+            # 清空已选择的元素
+            self.choosen_fruit.clear()
+            
+            # 开始一次自动消除，后续的自动消除会在handle方法中进行
+            self.perform_single_auto_elimination()
+        else:
+            self.auto_eliminate_button.text = "自动"
+            self.auto_eliminate_button.button_text = self.auto_eliminate_button.button_font.render(self.auto_eliminate_button.text, True, (0, 0, 0))
+            self.auto_eliminate_button.draw()
+            print("已停止自动消除")
+        
+    def start_auto_elimination(self):
+        """开始自动消除流程，会一直消除直到只剩下最后两个元素"""
+        # 如果只剩下两个或者更少的元素，或者游戏暂停，则停止自动消除
+        if self.game_map.get_left_elements() <= 2 or not self.pause_button.is_button_enabled():
+            return
+            
+        # 找到一对可以消除的元素
+        path = self.game_map.promote()
+        
+        # 如果找不到可消除的元素，尝试重排
+        if not path or len(path) < 2:
+            print("没有找到可消除的元素，尝试重排")
+            self.game_map.rearrange_matrix()
+            # 重排后再次尝试自动消除
+            pygame.time.delay(100)  # 短暂延迟，使玩家能看到重排效果
+            self.start_auto_elimination()
+            return
+            
+        # 获取要消除的两个元素坐标
+        start_row, start_col = path[0]
+        end_row, end_col = path[-1]
+        
+        # 创建消除回调函数，在动画结束后继续消除下一对
+        def auto_eliminate_callback(row1, col1, row2, col2):
+            # 消除当前元素
+            self.game_map.eliminate_cell(row1, col1)
+            self.game_map.eliminate_cell(row2, col2)
+            
+            # 检查是否已经消除所有元素或只剩下最后两个元素
+            if self.game_map.get_left_elements() <= 2:
+                print("只剩下最后两个元素，自动消除停止")
+                
+                # 如果完全消除了所有元素，显示胜利动画
+                if self.game_map.get_left_elements() == 0:
+                    self.show_victory_animation()
+            else:
+                # 递归调用，继续消除下一对元素
+                self.start_auto_elimination()
+        
+        # 设置元素为消除中状态
+        self.game_map.set_status(start_row, start_col, 'eliminating')
+        self.game_map.set_status(end_row, end_col, 'eliminating')
+        
+        # 添加消除动画，使用较短的动画时间
+        self.add_elimination_animation(
+            path,
+            color=(0, 255, 0),
+            expire_time=0.1,  # 动画时间设为0.1秒，快速显示
+            callback=auto_eliminate_callback,
+            callback_args=(start_row, start_col, end_row, end_col),
+            animation_type='elimination'
+        )
+
+    def perform_single_auto_elimination(self):
+        """执行一次自动消除操作"""
+        # 如果已不再自动消除状态，或只剩下两个或更少的元素，或游戏暂停，则停止自动消除
+        if not self.auto_eliminating or self.game_map.get_left_elements() <= 2 or not self.pause_button.is_button_enabled():
+            # 如果不是自动消除状态，重置帮助按钮
+            if not self.auto_eliminating:
+                self.auto_eliminate_button.text = "自动"
+                self.auto_eliminate_button.button_text = self.auto_eliminate_button.button_font.render(self.auto_eliminate_button.text, True, (0, 0, 0))
+                self.auto_eliminate_button.draw()
+            return
+            
+        # 找到一对可以消除的元素
+        path = self.game_map.promote()
+        
+        # 如果找不到可消除的元素，尝试重排
+        if not path or len(path) < 2:
+            print("没有找到可消除的元素，尝试重排")
+            self.game_map.rearrange_matrix()
+            self.set_all_status('normal')
+            # 重排后稍后再次尝试自动消除
+            return
+            
+        # 移除所有提示动画
+        self.remove_promote_animations()
+        
+        # 获取要消除的两个元素坐标
+        start_row, start_col = path[0]
+        end_row, end_col = path[-1]
+        
+        # 创建消除回调函数，在动画结束后触发下一次自动消除
+        def auto_eliminate_callback(row1, col1, row2, col2):
+            # 消除当前元素
+            self.game_map.eliminate_cell(row1, col1)
+            self.game_map.eliminate_cell(row2, col2)
+            
+            # 检查是否已经消除所有元素
+            if self.game_map.get_left_elements() == 0:
+                # 游戏胜利，添加胜利动画
+                self.show_victory_animation()
+                # 关闭自动消除状态
+                self.auto_eliminating = False
+            elif self.game_map.get_left_elements() <= 2:
+                # 只剩最后两个元素，停止自动消除
+                print("只剩下最后两个元素，自动消除停止")
+                self.auto_eliminating = False
+                self.auto_eliminate_button.text = "自动"
+                self.auto_eliminate_button.button_text = self.auto_eliminate_button.button_font.render(self.auto_eliminate_button.text, True, (0, 0, 0))
+                self.auto_eliminate_button.draw()
+        
+        # 设置元素为消除中状态
+        self.game_map.set_status(start_row, start_col, 'eliminating')
+        self.game_map.set_status(end_row, end_col, 'eliminating')
+        
+        # 添加消除动画，使用较短的动画时间
+        self.add_elimination_animation(
+            path,
+            color=(0, 255, 0),
+            expire_time=0.1,  # 动画时间设为0.1秒，快速显示
+            callback=auto_eliminate_callback,
+            callback_args=(start_row, start_col, end_row, end_col),
+            animation_type='elimination'
+        )
+
+    def add_elimination_animation(self, path, color=(0, 255, 0), expire_time=1, callback=None, callback_args=None, animation_type='elimination'):
+        """
+        添加一个新的消除动画到动画列表中
+        
+        参数:
+            path: 路径点列表，通常由 game_map.is_eliminable 方法返回
+            color: 绘制路径的颜色，默认为绿色
+            expire_time: 动画存活时间，单位为秒，默认为1秒
+            callback: 动画结束时调用的回调函数，默认为None
+            callback_args: 回调函数的参数，默认为None
+            animation_type: 动画子类型，用于标识不同用途的路径动画，如消除、提示等
+        """
+        # 创建新的动画字典
+        animation = {
+            'path': path,
+            'color': color,
+            'expire': expire_time,
+            'callback': callback,
+            'callback_args': callback_args,
+            'type': 'path',  # 基本类型为路径动画
+            'animation_type': animation_type  # 动画子类型（elimination, promote等）
+        }
+        
+        # 添加到动画列表
+        self.animations.append(animation)
+        
+    def set_all_status(self, status):
+        """重置所有元素的状态"""
+        for row in range(self.game_map.get_row()):
+            for col in range(self.game_map.get_col()):
+                # 跳过已消除的元素
+                if self.game_map.get_cell(row, col)['status'] != 'eliminated':
+                    self.game_map.set_status(row, col, status)
+                    
+
+    def remove_promote_animations(self):
+        """移除所有提示动画"""
+        i = 0
+        while i < len(self.animations):
+            if self.animations[i].get('type') == 'path' and self.animations[i].get('animation_type') == 'promote':
+                self.animations.pop(i)
+            else:
+                i += 1
+    
+    def reset_promote_status(self):
+        """重置所有元素的promote状态为normal"""
+        for row in range(self.game_map.get_row()):
+            for col in range(self.game_map.get_col()):
+                if self.game_map.get_cell(row, col)['status'] == 'promote':
+                    self.game_map.set_status(row, col, 'normal')
+                    
+
+    def show_victory_animation(self):
+        """显示胜利动画，在游戏界面中央显示胜利提示，并重置游戏状态"""
+        
+        # 创建一个胜利提示显示的回调，在显示3秒后执行
+        def victory_callback():
+            # 禁用游戏按钮
+            self.pause_button.disable_button()
+            self.promote_button.disable_button()
+            self.rearrange_button.disable_button()
+            
+            # 禁用自动消除按钮
+            if self.auto_eliminating:
+                self.auto_eliminating = False
+                self.auto_eliminate_button.text = "自动"
+                self.auto_eliminate_button.button_text = self.auto_eliminate_button.button_font.render(self.auto_eliminate_button.text, True, (0, 0, 0))
+                
+            # 启用开始按钮，允许重新开始游戏
+            self.start_button.enable_button()
+            
+            # 暂停计时器
+            if self.progress_bar:
+                self.progress_bar.pause()
+        
+        # 创建一个胜利动画，在3秒后自动消失
+        self.add_victory_text_animation(3.0, victory_callback)
+    
+    def add_victory_text_animation(self, expire_time=3.0, callback=None):
+        """添加胜利文字动画，在屏幕中央显示'胜利!'文字"""
+        # 创建一个新的动画类型
+        animation = {
+            'type': 'victory_text',  # 胜利文字动画类型
+            'expire': expire_time,
+            'callback': callback,
+            'callback_args': (),
+            'text': '胜利!',
+            'color': (255, 0, 0),  # 红色
+            'font_size': 72
+        }
+        
+        # 添加到动画列表
+        self.animations.append(animation)
 
