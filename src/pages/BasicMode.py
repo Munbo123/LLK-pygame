@@ -7,13 +7,19 @@ from logic.graph_logic import Graph
 from components.Button import Button
 from components.ProgressBar import Progress_bar
 from utils.image_processor import process_fruit_sheet  # 导入新的工具函数
+from utils.config import load_config
 
-game_background_path = r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_bg.bmp"
-sheet_path = r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_element.bmp"
-mask_path = r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\fruit_mask.bmp"
+game_background_path = r"./assets/fruit_bg.bmp"
+sheet_path = r"./assets/fruit_element.bmp"
+mask_path = r"./assets/fruit_mask.bmp"
 
 class Basic_mode:
     def __init__(self,screen:pygame.Surface):
+        # 读取配置信息
+        config = load_config()
+        self.row = config.get("rows", 10)  # 默认行数为10
+        self.col = config.get("columns", 10)  # 默认列数为10
+
         # 屏幕对象及其宽高
         self.screen = screen
         self.screen_width, self.screen_height = screen.get_size()
@@ -30,7 +36,7 @@ class Basic_mode:
         # 加载水果图集和遮罩图像
         self.fruit_images = process_fruit_sheet(sheet_path, mask_path)  # 使用导入的工具函数
         # 根据水果图像创建游戏地图
-        self.game_map = Graph(row=10, col=16, elements=self.fruit_images)
+        self.game_map = Graph(row=self.row, col=self.col, elements=self.fruit_images)
 
         # 设置所有元素为不可视状态
         self.set_all_status('unvisible')
@@ -52,22 +58,32 @@ class Basic_mode:
         # 定义按钮尺寸
         main_button_size = (100, 50)
         other_button_size = (75, 35)
+        self.all_buttons = []
 
         # 基本游戏功能按钮，包含开始游戏，暂停游戏，提示，重排，位于屏幕右侧位置，右边距约20像素，竖向排列，按钮之间间距约20像素
         # 右下角按钮，包含设置，帮助，按照竖向排列，紧靠右下角
 
         # 开始按钮
         self.start_button = Button(screen=self.screen,position=(800-100-20, 20), rect=main_button_size, text="开始游戏",font='fangsong')
+        self.all_buttons.append(self.start_button)
         # 暂停按钮
         self.pause_button = Button(screen=self.screen,position=(800-100-20, 20+50+20), rect=main_button_size, text="暂停游戏",font='fangsong')
+        self.all_buttons.append(self.pause_button)
         # 提示按钮
         self.promote_button = Button(screen=self.screen,position=(800-100-20, 20+50+20+50+20), rect=main_button_size, text="提示",font='fangsong')
+        self.all_buttons.append(self.promote_button)
         # 重排按钮
         self.rearrange_button = Button(screen=self.screen,position=(800-100-20, 20+50+20+50+20+50+20), rect=main_button_size, text="重排",font='fangsong')
+        self.all_buttons.append(self.rearrange_button)
         # 设置按钮
         self.setting_button = Button(screen=self.screen,position=(800-75, 600-35), rect=other_button_size, text="设置",font='fangsong')
-        # 自动按钮(原帮助按钮)
+        self.all_buttons.append(self.setting_button)
+        # 自动按钮
         self.auto_eliminate_button = Button(screen=self.screen,position=(800-75, 600-35-35-20), rect=other_button_size, text="自动",font='fangsong')
+        self.all_buttons.append(self.auto_eliminate_button)
+        # 返回按钮，位于左下角
+        self.return_button = Button(screen=self.screen,position=(20, 600-35), rect=other_button_size, text="返回",font='fangsong')
+        self.all_buttons.append(self.return_button)
 
 
         self.pause_button.disable_button() # 暂停按钮默认禁用
@@ -82,12 +98,8 @@ class Basic_mode:
         self.screen.blit(self.background, (0, 0))
 
         # 绘制按钮
-        self.start_button.draw()
-        self.pause_button.draw()
-        self.promote_button.draw()
-        self.rearrange_button.draw()
-        self.setting_button.draw()
-        self.auto_eliminate_button.draw()
+        for button in self.all_buttons:
+            button.draw()
         
         # 绘制进度条
         if self.progress_bar:
@@ -186,7 +198,7 @@ class Basic_mode:
         pygame.display.flip()
 
     def handle(self):
-        done,current_page = False,None
+        next_page_id, done = None, False  # 修改变量名，使其更明确表示返回的是页面 ID,默认不切换
 
         # 计算时间增量
         current_time = pygame.time.get_ticks() / 1000.0
@@ -220,22 +232,25 @@ class Basic_mode:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 # 开始按钮
                 if self.start_button.collidepoint(event.pos):
-                    self.start_button_event()
+                    next_page_id, done = self.start_button_event()
                 # 暂停按钮
                 elif self.pause_button.collidepoint(event.pos):
-                    self.pause_button_event()
+                    next_page_id, done = self.pause_button_event()
                 # 提示按钮
                 elif self.promote_button.collidepoint(event.pos):
-                    self.promote_button_event()
+                    next_page_id, done = self.promote_button_event()
                 # 重排按钮
                 elif self.rearrange_button.collidepoint(event.pos):
-                    self.rearrange_button_event()
+                    next_page_id, done = self.rearrange_button_event()
                 # 设置按钮
                 elif self.setting_button.collidepoint(event.pos):
-                    self.setting_button_event()
+                    next_page_id, done = self.setting_button_event()
                 # 自动按钮
                 elif self.auto_eliminate_button.collidepoint(event.pos):
-                    self.auto_eliminate_button_event()
+                    next_page_id, done = self.auto_eliminate_button_event()
+                # 返回按钮
+                elif self.return_button.collidepoint(event.pos):
+                    next_page_id, done = self.return_button_event()
                 # 判断鼠标点击位置是否是水果元素内
                 elif rect.collidepoint(event.pos):
                     # print(f"现在点击了位置：{event.pos}")
@@ -311,7 +326,8 @@ class Basic_mode:
                             self.game_map.set_status(fruit1[0], fruit1[1], 'normal')
                             self.game_map.set_status(fruit2[0], fruit2[1], 'normal')
 
-        return current_page, done
+
+        return next_page_id, done
 
     def start_button_event(self):
         if self.start_button.is_button_enabled():
@@ -320,7 +336,7 @@ class Basic_mode:
             
             # 重新初始化游戏矩阵，生成新的地图
             if self.game_map.get_col()*self.game_map.get_row() != self.game_map.get_left_elements():
-                self.game_map = Graph(row=10, col=16, elements=self.fruit_images)
+                self.game_map = Graph(row=self.row, col=self.col, elements=self.fruit_images)
             
             # 将所有元素设置为显示状态
             self.set_all_status('normal')
@@ -338,6 +354,9 @@ class Basic_mode:
             self.rearrange_button.enable_button()
         else:
             print("开始游戏按钮 clicked, but it is disabled")
+        
+        # 返回next_page_id和done,由于没有页面切换，所以仍然是None和False
+        return None, False
 
     def pause_button_event(self):
         if self.pause_button.is_button_enabled():
@@ -364,6 +383,9 @@ class Basic_mode:
                 self.rearrange_button.enable_button()
         else:
             print("暂停/继续游戏按钮 clicked, but it is disabled")
+        
+        # 返回next_page_id和done,由于没有页面切换，所以仍然是None和False
+        return None, False
 
     def promote_button_event(self):
         if self.promote_button.is_button_enabled():
@@ -394,14 +416,14 @@ class Basic_mode:
                     expire_time=float('inf'),
                     animation_type='promote'  # 标记为提示动画类型
                 )
-                
-                return True
             else:
                 # 如果没有找到可消除的元素对，显示提示信息
                 print("没有可以消除的元素对")
-                return False
         else:
             print("提示按钮 clicked, but it is disabled")
+        
+        # 返回next_page_id和done,由于没有页面切换，所以仍然是None和False
+        return None, False
     
     def rearrange_button_event(self):
         if self.rearrange_button.is_button_enabled(): 
@@ -418,9 +440,14 @@ class Basic_mode:
             self.set_all_status('normal')
         else:
             print("重排按钮 clicked, but it is disabled")
+        
+        # 返回next_page_id和done,由于没有页面切换，所以仍然是None和False
+        return None, False
 
     def setting_button_event(self):
         print("设置按钮 clicked")
+
+        return 'setting_page', False
 
     def auto_eliminate_button_event(self):
         print("自动按钮 clicked")
@@ -428,12 +455,12 @@ class Basic_mode:
         # 检查是否处于游戏进行中的状态（只有游戏开始后才能使用帮助功能）
         if not self.pause_button.is_button_enabled():
             print("游戏未开始或已暂停，无法使用帮助功能")
-            return
+            return None, False
             
         # 检查剩余元素数量，如果只剩下两个或更少的元素，则不执行自动消除
         if self.game_map.get_left_elements() <= 2:
             print("只剩下最后两个元素，无法继续自动消除")
-            return
+            return None, False
             
         # 切换自动消除状态
         self.auto_eliminating = not self.auto_eliminating
@@ -454,6 +481,14 @@ class Basic_mode:
             self.auto_eliminate_button.button_text = self.auto_eliminate_button.button_font.render(self.auto_eliminate_button.text, True, (0, 0, 0))
             self.auto_eliminate_button.draw()
             print("已停止自动消除")
+        
+        return None, False
+    
+    def return_button_event(self):
+        print("返回按钮 clicked")
+        # 返回切换页面请求
+        return 'main_menu', False
+
         
     def start_auto_elimination(self):
         """开始自动消除流程，会一直消除直到只剩下最后两个元素"""
@@ -664,4 +699,5 @@ class Basic_mode:
         
         # 添加到动画列表
         self.animations.append(animation)
+    
 
