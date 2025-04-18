@@ -3,6 +3,7 @@ import random
 import time
 
 from logic.matrix_logic import Matrix
+from logic.graph_logic import Graph
 from components.Button import Button
 from components.ProgressBar import Progress_bar
 from utils.image_processor import process_fruit_sheet  # 导入新的工具函数
@@ -27,13 +28,13 @@ class Basic_mode:
         self.progress_bar = Progress_bar(screen=screen,total_time=300) # 总时间300秒
 
         # 加载水果图集和遮罩图像
-        fruit_images = process_fruit_sheet(sheet_path, mask_path)  # 使用导入的工具函数
+        self.fruit_images = process_fruit_sheet(sheet_path, mask_path)  # 使用导入的工具函数
         # 根据水果图像创建游戏地图
-        self.game_map = Matrix(row=10,col=16,elements=fruit_images)
-        
-        # 初始时将所有元素设置为不可见状态
-        self.set_all_status('unvisible')
+        self.game_map = Graph(row=10, col=16, elements=self.fruit_images)
 
+        # 设置所有元素为不可视状态
+        self.set_all_status('unvisible')
+        
         # 初始化已选水果集合
         self.choosen_fruit = set()
         
@@ -99,37 +100,38 @@ class Basic_mode:
         #获取每个元素的长宽
         element_width, element_height = self.game_map.get_elements_width(), self.game_map.get_elements_height()
 
-        # 绘制游戏界面时，使用水果图像
-        for row in range(self.game_map.get_row()):
-            for col in range(self.game_map.get_col()):
-                # 获取水果元素和其属性
-                fruit = self.game_map.get_cell(row,col)
-                index,status = fruit['index'],fruit['status']
-                fruit_suface = self.game_map.get_elements(index)
-                pos_x = self.game_matrix_x + col * element_width
-                pos_y = self.game_matrix_y + row * element_height
+        if self.game_map is not None:
+            # 绘制游戏界面时，使用水果图像
+            for row in range(self.game_map.get_row()):
+                for col in range(self.game_map.get_col()):
+                    # 获取水果元素和其属性
+                    fruit = self.game_map.get_cell(row,col)
+                    index,status = fruit['index'],fruit['status']
+                    fruit_suface = self.game_map.get_elements(index)
+                    pos_x = self.game_matrix_x + col * element_width
+                    pos_y = self.game_matrix_y + row * element_height
 
-                # 根据元素的status属性绘制水果图像
-                if status == 'normal':
-                    self.screen.blit(fruit_suface, (pos_x, pos_y))
-                elif status in ['choosen','eliminating']:
-                    # 绘制红色边框
-                    selected_rect = pygame.Rect((pos_x, pos_y), (40, 40))
-                    pygame.draw.rect(self.screen, (255, 0, 0), selected_rect, 2)
-                    # 绘制水果图像
-                    self.screen.blit(fruit_suface, (pos_x, pos_y))
-                elif status == 'promote':
-                    # 绘制黄色边框
-                    selected_rect = pygame.Rect((pos_x, pos_y), (40, 40))
-                    pygame.draw.rect(self.screen, (255, 255, 0), selected_rect, 4)
-                    # 绘制水果图像
-                    self.screen.blit(fruit_suface, (pos_x, pos_y))
-                elif status == 'disabled':
-                    # 绘制水果图像（和normal不同的是后续handle中不会对点击事件做出反应，但还是得渲染）
-                    self.screen.blit(fruit_suface, (pos_x, pos_y))
-                elif status in ['unvisible','eliminated']:
-                    # 不渲染
-                    pass
+                    # 根据元素的status属性绘制水果图像
+                    if status == 'normal':
+                        self.screen.blit(fruit_suface, (pos_x, pos_y))
+                    elif status in ['choosen','eliminating']:
+                        # 绘制红色边框
+                        selected_rect = pygame.Rect((pos_x, pos_y), (40, 40))
+                        pygame.draw.rect(self.screen, (255, 0, 0), selected_rect, 2)
+                        # 绘制水果图像
+                        self.screen.blit(fruit_suface, (pos_x, pos_y))
+                    elif status == 'promote':
+                        # 绘制黄色边框
+                        selected_rect = pygame.Rect((pos_x, pos_y), (40, 40))
+                        pygame.draw.rect(self.screen, (255, 255, 0), selected_rect, 4)
+                        # 绘制水果图像
+                        self.screen.blit(fruit_suface, (pos_x, pos_y))
+                    elif status == 'disabled':
+                        # 绘制水果图像（和normal不同的是后续handle中不会对点击事件做出反应，但还是得渲染）
+                        self.screen.blit(fruit_suface, (pos_x, pos_y))
+                    elif status in ['unvisible','eliminated']:
+                        # 不渲染
+                        pass
 
         # 绘制所有当前动画效果
         for animation in self.animations:
@@ -317,8 +319,8 @@ class Basic_mode:
             self.start_button.disable_button()
             
             # 重新初始化游戏矩阵，生成新的地图
-            fruit_images = process_fruit_sheet(sheet_path, mask_path)
-            self.game_map = Matrix(row=10, col=16, elements=fruit_images)
+            if self.game_map.get_col()*self.game_map.get_row() != self.game_map.get_left_elements():
+                self.game_map = Graph(row=10, col=16, elements=self.fruit_images)
             
             # 将所有元素设置为显示状态
             self.set_all_status('normal')

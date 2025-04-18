@@ -66,13 +66,17 @@ class Progress_bar:
         self.remaining_time = self.total_time
 
     def set_time(self,current_time:int):
-        pass
+        self.remaining_time = current_time
 
     def add_time(self,add_time:int):
-        pass
+        self.remaining_time += add_time
+        if self.remaining_time > self.total_time:
+            self.remaining_time = self.total_time
 
     def reduce_time(self,reduce_time:int):
-        pass
+        self.remaining_time -= reduce_time
+        if self.remaining_time < 0:
+            self.remaining_time = 0
 
     def disable(self):
         '''禁用进度条'''
