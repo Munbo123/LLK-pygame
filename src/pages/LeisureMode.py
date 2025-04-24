@@ -1,4 +1,4 @@
-from pages.BasicMode import Basic_mode
+from src.pages.BasicMode import Basic_mode
 import pygame
 
 class Leisure_mode(Basic_mode):

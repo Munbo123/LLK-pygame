@@ -1,7 +1,7 @@
 import pygame
 
-from components.Button import Button
-from utils.config import load_config, update_game_size
+from src.components.Button import Button
+from src.utils.config import load_config, update_game_size
 
 
 main_menu_background_path = r"./assets/llk_main.bmp"

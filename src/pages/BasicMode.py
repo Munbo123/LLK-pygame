@@ -2,12 +2,12 @@ import pygame
 import random
 import time
 
-from logic.matrix_logic import Matrix
-from logic.graph_logic import Graph
-from components.Button import Button
-from components.ProgressBar import Progress_bar
-from utils.image_processor import process_fruit_sheet  # 导入新的工具函数
-from utils.config import load_config
+from src.logic.matrix_logic import Matrix
+from src.logic.graph_logic import Graph
+from src.components.Button import Button
+from src.components.ProgressBar import Progress_bar
+from src.utils.image_processor import process_fruit_sheet  # 导入新的工具函数
+from src.utils.config import load_config
 
 game_background_path = r"./assets/fruit_bg.bmp"
 sheet_path = r"./assets/fruit_element.bmp"

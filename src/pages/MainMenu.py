@@ -3,9 +3,9 @@ import sys
 import os
 
 
-from components.Button import Button
-from pages.BasicMode import Basic_mode
-from pages.LeisureMode import Leisure_mode
+from src.components.Button import Button
+from src.pages.BasicMode import Basic_mode
+from src.pages.LeisureMode import Leisure_mode
 
 
 

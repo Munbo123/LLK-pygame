@@ -1,9 +1,26 @@
 import pygame
+import sys
+import os
 
-from pages.MainMenu import Main_menu
-from pages.BasicMode import Basic_mode
-from pages.LeisureMode import Leisure_mode
-from pages.SettingPage import Setting_page
+# 添加正确的导入路径
+# 这种方式可以同时支持开发环境和PyInstaller打包后的环境
+if getattr(sys, 'frozen', False):
+    # 如果是打包后的环境
+    application_path = os.path.dirname(sys.executable)
+    # 将打包后的路径添加到sys.path
+    if os.path.exists(os.path.join(application_path, 'src')):
+        sys.path.insert(0, application_path)
+    else:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+else:
+    # 开发环境
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# 现在可以正确导入模块
+from src.pages.MainMenu import Main_menu
+from src.pages.BasicMode import Basic_mode
+from src.pages.LeisureMode import Leisure_mode
+from src.pages.SettingPage import Setting_page
 
 # 初始化游戏引擎
 pygame.init()
@@ -65,6 +82,8 @@ while not done:
                 pygame.display.set_caption('欢乐连连看-基本模式')
             elif current_page_id == 'leisure_mode':
                 pygame.display.set_caption('欢乐连连看-休闲模式')
+            elif current_page_id == 'setting_page':
+                pygame.display.set_caption('欢乐连连看-设置')
         else:
             print(f"无效的页面标识符: {next_page_id}")
     
