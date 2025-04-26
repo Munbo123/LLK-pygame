@@ -1,0 +1,79 @@
+{
+  "type": "matrix_state",
+  "data": {
+    "match_id": "match_id_string",
+    "matrices": {
+      "user_id_string1": {
+        "matrix": [
+          [
+            {
+              "index": 1,
+              "status": "normal",
+              "row": 0,
+              "col": 0
+            },
+            {
+              "index": 2,
+              "status": "normal",
+              "row": 0,
+              "col": 1
+            }
+          ],
+          [
+            {
+              "index": 3,
+              "status": "normal",
+              "row": 1,
+              "col": 0
+            },
+            {
+              "index": 1,
+              "status": "selected",
+              "row": 1,
+              "col": 1
+            }
+          ]
+        ],
+        "row": 2,
+        "col": 2,
+        "left_elements": 4
+      },
+      "user_id_string2": {
+        "matrix": [
+          [
+            {
+              "index": 4,
+              "status": "normal",
+              "row": 0,
+              "col": 0
+            },
+            {
+              "index": 4,
+              "status": "selected",
+              "row": 0,
+              "col": 1
+            }
+          ],
+          [
+            {
+              "index": 5,
+              "status": "eliminated",
+              "row": 1,
+              "col": 0
+            },
+            {
+              "index": 5,
+              "status": "normal",
+              "row": 1,
+              "col": 1
+            }
+          ]
+        ],
+        "row": 2,
+        "col": 2,
+        "left_elements": 3
+      }
+    },
+    "timestamp": 1714132800000
+  }
+}

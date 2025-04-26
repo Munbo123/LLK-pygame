@@ -1,0 +1,18 @@
+{
+  "type": "ready_status_update",
+  "data": {
+    "match_id": "match_id_string",
+    "player_statuses": {
+      "user1_id_string": {
+        "ready": true,
+        "name": "user1_name_string"
+      },
+      "user2_id_string": {
+        "ready": false,
+        "name": "user2_name_string"
+      }
+    },
+    "all_ready": false,
+    "timestamp": 1714132800000
+  }
+}

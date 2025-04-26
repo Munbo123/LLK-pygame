@@ -1,0 +1,7 @@
+{
+  "type": "connection_request",
+  "data": {
+    "user_name": "user_name_string",
+    "timestamp": 1714132800000
+  }
+}

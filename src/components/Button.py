@@ -50,4 +50,10 @@ class Button:
         if self.button_rect.collidepoint(pos):
             return True
         return False
+    
+    def set_text(self, text):
+        '''设置按钮文本'''
+        self.text = text
+        self.button_text = self.button_font.render(text, True, self.text_color)
+        self.draw()
 

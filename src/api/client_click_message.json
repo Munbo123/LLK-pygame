@@ -1,0 +1,15 @@
+{
+  "type": "click_message",
+  "data": {
+    "position": {
+      "row": 0,
+      "col": 0
+    },
+    "match_id": "match_id_string",
+    "user": {
+      "id": "user_id_string",
+      "name": "user_name_string"
+    },
+    "timestamp": 1714132800000
+  }
+}

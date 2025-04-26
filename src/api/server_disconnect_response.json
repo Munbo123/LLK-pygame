@@ -1,0 +1,9 @@
+{
+  "type": "disconnect_response",
+  "data": {
+    "user_id": "user_id_string",
+    "status": "disconnected",
+    "message": "连接已成功断开",
+    "timestamp": 1714132800000
+  }
+}

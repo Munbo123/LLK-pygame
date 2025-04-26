@@ -488,8 +488,7 @@ class Basic_mode:
         print("返回按钮 clicked")
         # 返回切换页面请求
         return 'main_menu', False
-
-        
+     
     def start_auto_elimination(self):
         """开始自动消除流程，会一直消除直到只剩下最后两个元素"""
         # 如果只剩下两个或者更少的元素，或者游戏暂停，则停止自动消除
@@ -640,7 +639,6 @@ class Basic_mode:
                 if self.game_map.get_cell(row, col)['status'] != 'eliminated':
                     self.game_map.set_status(row, col, status)
                     
-
     def remove_promote_animations(self):
         """移除所有提示动画"""
         i = 0
@@ -657,7 +655,6 @@ class Basic_mode:
                 if self.game_map.get_cell(row, col)['status'] == 'promote':
                     self.game_map.set_status(row, col, 'normal')
                     
-
     def show_victory_animation(self):
         """显示胜利动画，在游戏界面中央显示胜利提示，并重置游戏状态"""
         
@@ -700,4 +697,3 @@ class Basic_mode:
         # 添加到动画列表
         self.animations.append(animation)
     
-

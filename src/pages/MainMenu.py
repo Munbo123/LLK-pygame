@@ -81,20 +81,24 @@ class Main_menu:
                     print("基本模式按钮 clicked")
                     next_page_id = 'basic_mode'
                     pygame.display.set_caption('欢乐连连看-基本模式')
-                if self.leisure_mode_button.collidepoint(event.pos):
+                elif self.leisure_mode_button.collidepoint(event.pos):
                     print("休闲模式按钮 clicked")
                     next_page_id = 'leisure_mode'
                     pygame.display.set_caption('欢乐连连看-休闲模式')
-                if self.level_mode_button.collidepoint(event.pos):
-                    print("关卡模式按钮 clicked")
-                if self.chart_button.collidepoint(event.pos):
+                elif self.level_mode_button.collidepoint(event.pos):
+                    print("联机模式按钮 clicked")
+                    next_page_id = 'network_mode'
+                    pygame.display.set_caption('欢乐连连看-联机模式')
+                elif self.chart_button.collidepoint(event.pos):
                     print("排行榜按钮 clicked")
-                if self.setting_button.collidepoint(event.pos):
+                elif self.setting_button.collidepoint(event.pos):
                     print("设置按钮 clicked")
                     next_page_id = 'setting_page'
                     pygame.display.set_caption('欢乐连连看-设置')
-                if self.help_button.collidepoint(event.pos):
+                elif self.help_button.collidepoint(event.pos):
                     print("帮助按钮 clicked")
+                else:
+                    print("点击了其他区域")
         
         return (next_page_id, done)
 
