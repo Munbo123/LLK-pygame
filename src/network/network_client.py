@@ -29,6 +29,11 @@ class NetworkClient:
         self.opponent_id = None
         self.opponent_name = None
         
+        # 游戏状态变量
+        self.countdown_active = False  # 倒计时是否激活
+        self.countdown_seconds = 0     # 倒计时剩余秒数
+        self.game_started = False      # 游戏是否已开始
+        
         # 消息队列，用于接收从服务器发来的消息
         self.message_queue = Queue()
         
@@ -38,7 +43,11 @@ class NetworkClient:
             'match_success': [],
             'ready_status_update': [],
             'matrix_state': [],
-            'disconnect_response': [],  # 添加断开连接响应的处理器列表
+            'disconnect_response': [],
+            'countdown_start': [],      # 新增：倒计时开始
+            'countdown_update': [],     # 新增：倒计时更新
+            'countdown_cancel': [],     # 新增：倒计时取消
+            'game_start': [],           # 新增：游戏开始
             'error': []
         }
         
@@ -189,6 +198,16 @@ class NetworkClient:
                             handler(message_data)
                             
                         break  # 退出监听循环
+                    
+                    # 处理倒计时相关消息
+                    elif message_type == "countdown_start":
+                        await self._handle_countdown_start(message_data)
+                    elif message_type == "countdown_update":
+                        await self._handle_countdown_update(message_data)
+                    elif message_type == "countdown_cancel":
+                        await self._handle_countdown_cancel(message_data)
+                    elif message_type == "game_start":
+                        await self._handle_game_start(message_data)
                         
                     elif message_type in self.event_handlers:
                         # 触发对应类型的事件处理器
@@ -211,6 +230,91 @@ class NetworkClient:
             self.connected = False
         finally:
             self.connected = False
+    
+    async def _handle_countdown_start(self, message_data):
+        """
+        处理倒计时开始消息
+        
+        Args:
+            message_data: 倒计时开始消息数据
+        """
+        data = message_data.get("data", {})
+        duration = data.get("duration", 3)
+        
+        # 设置倒计时状态
+        self.countdown_active = True
+        self.countdown_seconds = duration
+        
+        print(f"倒计时开始，初始值: {duration}秒")
+        
+        # 触发倒计时开始事件
+        for handler in self.event_handlers["countdown_start"]:
+            handler(message_data)
+    
+    async def _handle_countdown_update(self, message_data):
+        """
+        处理倒计时更新消息
+        
+        Args:
+            message_data: 倒计时更新消息数据
+        """
+        data = message_data.get("data", {})
+        remaining = data.get("remaining_seconds", 0)
+        
+        # 更新倒计时状态
+        self.countdown_seconds = remaining
+        
+        print(f"倒计时更新: {remaining}秒")
+        
+        # 触发倒计时更新事件
+        for handler in self.event_handlers["countdown_update"]:
+            handler(message_data)
+    
+    async def _handle_countdown_cancel(self, message_data):
+        """
+        处理倒计时取消消息
+        
+        Args:
+            message_data: 倒计时取消消息数据
+        """
+        data = message_data.get("data", {})
+        reason = data.get("reason", "未知原因")
+        player_id = data.get("player_id")
+        
+        # 重置倒计时状态
+        self.countdown_active = False
+        self.countdown_seconds = 0
+        
+        print(f"倒计时取消: {reason}")
+        
+        # 触发倒计时取消事件
+        for handler in self.event_handlers["countdown_cancel"]:
+            handler(message_data)
+    
+    async def _handle_game_start(self, message_data):
+        """
+        处理游戏开始消息
+        
+        Args:
+            message_data: 游戏开始消息数据
+        """
+        # 重置倒计时状态
+        self.countdown_active = False
+        self.countdown_seconds = 0
+        
+        # 设置游戏状态
+        self.game_started = True
+        
+        print("游戏开始!")
+        
+        # 触发游戏开始事件
+        # 确保使用一个明确的副本遍历处理器列表，避免潜在修改问题
+        handlers = self.event_handlers["game_start"].copy()
+        for handler in handlers:
+            try:
+                handler(message_data)
+            except Exception as e:
+                print(f"调用游戏开始处理器时出错: {e}")
             
     async def _send_connection_request(self):
         """

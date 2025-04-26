@@ -51,11 +51,13 @@ def process_fruit_sheet(sheet_path:str=r"./assets/fruit_element.bmp", mask_path:
             # 获取像素颜色
             pixel_color = sheet.get_at((x, y))
             mask_color = mask.get_at((x, y))
-            # 如果 mask.bmp 中的像素颜色为白色，则设置为透明
-            if mask_color != (255, 255, 255, 255):
-                processed_sheet.set_at((x, y), (0, 0, 0, 0))
-            else:
+            
+            # 如果遮罩图像中的像素是白色(255,255,255)，则保留原图像的像素
+            # 否则，设置为透明(0,0,0,0)
+            if mask_color == (255, 255, 255, 255):
                 processed_sheet.set_at((x, y), pixel_color)
+            else:
+                processed_sheet.set_at((x, y), (0, 0, 0, 0))
         
     # 将处理后的水果图集切分为10个水果图像
     fruit_images = []

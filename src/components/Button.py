@@ -10,6 +10,8 @@ class Button:
         self.button_rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
         # 按钮颜色，字体颜色，字体属性
+        self.default_button_color = color
+        self.default_text_color = text_color
         self.button_color = color
         self.text_color = text_color
         self.font = font
@@ -18,6 +20,10 @@ class Button:
         # 创建字体对象
         self.button_font = pygame.font.SysFont(font, font_size)
         self.button_text = self.button_font.render(text, True, text_color)
+
+        # 禁用状态的颜色
+        self.disabled_button_color = (200, 200, 200)  # 灰色背景
+        self.disabled_text_color = (100, 100, 100)    # 深灰色文字
 
         # 圆角
         self.radius = 10
@@ -32,15 +38,21 @@ class Button:
 
     def enable_button(self):
         self.enable = True
+        # 恢复默认颜色
+        self.button_color = self.default_button_color
+        self.text_color = self.default_text_color
+        # 重新渲染文本
         self.button_text = self.button_font.render(self.text, True, self.text_color)
-        self.draw()
+        # 不需要立即调用draw()，因为会在下一个游戏循环中绘制
     
     def disable_button(self):
         self.enable = False
-        disabled_button_color = (200, 200, 200)
-        disabled_text_color = (100, 100, 100)
-        self.button_text = self.button_font.render(self.text, True, disabled_text_color)
-        self.draw()
+        # 设置为禁用状态的颜色
+        self.button_color = self.disabled_button_color
+        self.text_color = self.disabled_text_color
+        # 重新渲染文本
+        self.button_text = self.button_font.render(self.text, True, self.text_color)
+        # 不需要立即调用draw()，因为会在下一个游戏循环中绘制
     
     def is_button_enabled(self):
         return self.enable
@@ -55,5 +67,5 @@ class Button:
         '''设置按钮文本'''
         self.text = text
         self.button_text = self.button_font.render(text, True, self.text_color)
-        self.draw()
+        # 不需要立即调用draw()，因为会在下一个游戏循环中绘制
 

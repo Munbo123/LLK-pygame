@@ -1,0 +1,13 @@
+{
+  "type": "server_elimination_path",
+  "data": {
+    "path": [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [2, 1]
+    ],
+    "player_id": "player123",
+    "score": 10
+  }
+}

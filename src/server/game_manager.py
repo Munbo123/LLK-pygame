@@ -3,6 +3,8 @@
 """
 import uuid
 import time
+import asyncio
+import json  # 添加 json 模块导入
 from .match import Match
 
 
@@ -20,6 +22,15 @@ class GameManager:
         self.matches = {}  # 进行中的对局，键为对局ID
         self.player_to_match = {}  # 玩家ID到对局ID的映射
         self.elements = elements  # 用于初始化矩阵的元素
+        self.client_handler = None  # 客户端处理器引用，用于发送消息
+    
+    def set_client_handler(self, client_handler):
+        """设置客户端处理器引用
+        
+        Args:
+            client_handler: ClientHandler实例
+        """
+        self.client_handler = client_handler
     
     def add_player(self, player_id, player_name):
         """
@@ -125,12 +136,105 @@ class GameManager:
         if not match:
             return False, {"error": "对局不存在"}
         
+        # 如果玩家取消准备且倒计时正在进行，取消倒计时
+        if not status and match.countdown_active:
+            cancel_reason = "玩家取消准备"
+            cancel_message = match.get_countdown_cancel_json(cancel_reason, player_id)
+            match.cancel_countdown()
+            
+            # 如果有客户端处理器，通知双方倒计时取消
+            if self.client_handler:
+                asyncio.create_task(self.notify_players(match, cancel_message))
+        
         # 更新玩家准备状态
         if match.update_ready_status(player_id, status):
-            # 返回更新后的准备状态
-            return True, match.get_ready_status_json()
+            # 获取更新后的准备状态
+            ready_status_json = match.get_ready_status_json()
+            
+            # 如果双方都已准备好且倒计时尚未开始，启动倒计时
+            if match.are_all_ready() and not match.countdown_active and not match.game_started:
+                # 标记倒计时已启动
+                match.countdown_active = True
+                
+                # 创建并启动倒计时任务
+                match.countdown_task = asyncio.create_task(
+                    self.start_countdown(match)
+                )
+                
+            return True, ready_status_json
         else:
             return False, {"error": "无法更新准备状态"}
+    
+    async def start_countdown(self, match):
+        """
+        启动游戏倒计时
+        
+        Args:
+            match: Match对象
+        """
+        if not self.client_handler:
+            print("错误: 客户端处理器未设置，无法发送倒计时消息")
+            return
+            
+        try:
+            # 发送倒计时开始消息
+            countdown_start = match.get_countdown_start_json()
+            await self.notify_players(match, countdown_start)
+            
+            # 3秒倒计时
+            for remaining in range(3, 0, -1):
+                # 如果倒计时被取消，提前退出
+                if not match.countdown_active:
+                    return
+                    
+                # 发送倒计时更新消息
+                countdown_update = match.get_countdown_update_json(remaining)
+                await self.notify_players(match, countdown_update)
+                
+                # 等待1秒
+                await asyncio.sleep(1)
+                
+            # 倒计时结束，发送游戏开始消息
+            if match.countdown_active:
+                # 初始化游戏矩阵
+                if match.initialize_game_matrices():
+                    print(f"对局 {match.match_id} 的游戏矩阵已初始化")
+                else:
+                    print(f"对局 {match.match_id} 的游戏矩阵初始化失败")
+                
+                # 发送游戏开始消息
+                game_start = match.get_game_start_json()
+                await self.notify_players(match, game_start)
+                
+                # 发送矩阵状态
+                matrix_state = match.get_match_state_json()
+                await self.notify_players(match, json.loads(matrix_state))
+                
+                # 更新游戏状态
+                match.game_started = True
+                match.countdown_active = False
+                
+        except Exception as e:
+            print(f"倒计时过程中出错: {e}")
+            match.countdown_active = False
+    
+    async def notify_players(self, match, message):
+        """
+        向对局中的两个玩家发送消息
+        
+        Args:
+            match: Match对象
+            message: 要发送的消息（字典或JSON字符串）
+        """
+        if not self.client_handler:
+            return
+            
+        try:
+            # 向两个玩家发送消息
+            await self.client_handler.send_to_client(match.player1["id"], message)
+            await self.client_handler.send_to_client(match.player2["id"], message)
+        except Exception as e:
+            print(f"通知玩家时出错: {e}")
     
     def handle_click(self, player_id, match_id, row, col):
         """

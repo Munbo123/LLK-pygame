@@ -1,0 +1,8 @@
+{
+  "type": "game_start",
+  "data": {
+    "match_id": "match_id_string",
+    "message": "游戏正式开始",
+    "timestamp": 1714132800000
+  }
+}

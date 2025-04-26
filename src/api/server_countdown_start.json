@@ -1,0 +1,9 @@
+{
+  "type": "countdown_start",
+  "data": {
+    "match_id": "match_id_string",
+    "duration": 3,
+    "message": "双方已准备，游戏即将开始",
+    "timestamp": 1714132800000
+  }
+}

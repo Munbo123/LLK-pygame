@@ -1,0 +1,8 @@
+{
+  "type": "countdown_update",
+  "data": {
+    "match_id": "match_id_string",
+    "remaining_seconds": 2,
+    "timestamp": 1714132800000
+  }
+}

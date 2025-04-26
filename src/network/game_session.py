@@ -1,6 +1,7 @@
 """
 游戏会话管理器，管理联机模式下的游戏状态
 """
+import pprint
 import pygame
 from src.logic.matrix_logic import Matrix
 from src.network.network_client import NetworkClient
@@ -23,7 +24,7 @@ class GameSession:
         self.opponent_ready = False
         self.all_ready = False
         self.game_started = False
-        
+            
         # 注册网络事件处理器
         self._register_network_handlers()
         
@@ -32,6 +33,9 @@ class GameSession:
         self.network_client.register_handler('match_success', self._handle_match_success)
         self.network_client.register_handler('ready_status_update', self._handle_ready_status)
         self.network_client.register_handler('matrix_state', self._handle_matrix_state)
+        self.network_client.register_handler('game_start', self._handle_game_start)
+        # 注册新的消除路径消息处理器
+        self.network_client.register_handler('elimination_path', self._handle_elimination_path)
         
     def _handle_match_success(self, message):
         """
@@ -91,10 +95,42 @@ class GameSession:
         player_id = self.network_client.user_id
         opponent_id = self.network_client.opponent_id
         
-        # 更新矩阵
+        # 检查矩阵数据是否存在
         if player_id in matrices and opponent_id in matrices:
-            self._update_matrix_from_data(matrices[player_id], is_player=True)
-            self._update_matrix_from_data(matrices[opponent_id], is_player=False)
+            # 计算当前矩阵状态的哈希值
+            current_hash = hash(str(matrices))
+            
+            # 如果与上次收到的矩阵状态不同，才处理并打印
+            if current_hash != self.last_matrix_hash:
+                self.last_matrix_hash = current_hash
+                
+                # 使用pprint格式化打印矩阵数据
+                print("\n收到矩阵状态更新：")
+                if player_id in matrices:
+                    player_matrix = matrices[player_id]
+                    matrix_data = player_matrix.get('matrix', [])
+                    row = player_matrix.get('row', 0)
+                    col = player_matrix.get('col', 0)
+                    
+                    print(f"玩家矩阵 ({row}x{col}):")
+                    pp = pprint.PrettyPrinter(indent=2, width=120)
+                    
+                    # 打印简化版的矩阵，只显示索引和状态
+                    simplified_matrix = []
+                    for r in range(min(row, len(matrix_data))):
+                        row_data = []
+                        for c in range(min(col, len(matrix_data[r]))):
+                            cell = matrix_data[r][c]
+                            row_data.append({
+                                'i': cell.get('index', -1),  # 使用'i'代替'index'使输出更紧凑
+                                's': cell.get('status', 'n')[0]  # 只使用状态的首字母
+                            })
+                        simplified_matrix.append(row_data)
+                    pp.pprint(simplified_matrix)
+                
+                # 更新矩阵
+                self._update_matrix_from_data(matrices[player_id], is_player=True)
+                self._update_matrix_from_data(matrices[opponent_id], is_player=False)
             
     def _update_matrix_from_data(self, matrix_data, is_player=True):
         """
@@ -205,6 +241,15 @@ class GameSession:
         """
         return (self.player_ready, self.opponent_ready, self.all_ready)
     
+    def get_opponent_ready_status(self):
+        """
+        获取对手准备状态
+        
+        Returns:
+            bool: 对手是否已准备
+        """
+        return self.opponent_ready
+    
     def reset(self):
         """
         重置会话状态
@@ -216,3 +261,63 @@ class GameSession:
         self.opponent_ready = False
         self.all_ready = False
         self.game_started = False
+
+    def _handle_game_start(self, message):
+        """
+        处理游戏开始消息
+        
+        Args:
+            message: 游戏开始消息数据
+        """
+        # 设置游戏已开始状态
+        self.game_started = True
+        print("收到游戏开始消息，游戏现在正式开始")
+        
+    def _handle_elimination_path(self, message):
+        """
+        处理消除路径消息
+        
+        Args:
+            message: 消除路径消息数据
+        """
+        data = message.get("data", {})
+        
+        # 提取消除路径信息
+        elimination_path = data.get("path", [])
+        player_id = data.get("player_id")
+        
+        if elimination_path:
+            print(f"收到消除路径: {elimination_path}, 玩家ID: {player_id}")
+            
+            # 保存消除路径信息，供界面类使用
+            self.elimination_path = elimination_path
+            self.elimination_player_id = player_id
+            
+            # 触发回调函数(如果已设置)
+            if hasattr(self, 'on_elimination_path') and callable(self.on_elimination_path):
+                self.on_elimination_path(elimination_path, player_id)
+    
+    def get_elimination_path(self):
+        """
+        获取最新的消除路径信息
+        
+        Returns:
+            tuple: (路径列表, 玩家ID)
+        """
+        path = self.elimination_path
+        player_id = self.elimination_player_id
+        
+        # 返回后清空，避免重复处理
+        self.elimination_path = None
+        self.elimination_player_id = None
+        
+        return (path, player_id)
+        
+    def set_elimination_path_callback(self, callback):
+        """
+        设置消除路径消息的回调函数
+        
+        Args:
+            callback: 回调函数，接收参数(path, player_id)
+        """
+        self.on_elimination_path = callback

@@ -1,0 +1,9 @@
+{
+  "type": "countdown_cancel",
+  "data": {
+    "match_id": "match_id_string",
+    "reason": "玩家取消准备",
+    "player_id": "player_id_string",
+    "timestamp": 1714132800000
+  }
+}

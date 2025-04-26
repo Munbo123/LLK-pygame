@@ -23,6 +23,9 @@ class ClientHandler:
         self.game_manager = game_manager
         self.clients = {}  # 存储客户端连接，键为客户端ID
         
+        # 设置游戏管理器的客户端处理器引用，以便它可以发送消息
+        self.game_manager.set_client_handler(self)
+        
     async def handle_client(self, websocket):
         """
         处理客户端连接
@@ -233,9 +236,18 @@ class ClientHandler:
             # 获取匹配对象
             match = self.game_manager.matches.get(match_id)
             if match:
-                # 向双方发送更新后的矩阵状态
-                await self.send_to_client(match.player1["id"], result)
-                await self.send_to_client(match.player2["id"], result)
+                try:
+                    # 将字符串转换为JSON对象（如果result是字符串的话）
+                    if isinstance(result, str):
+                        import json
+                        result = json.loads(result)
+                        
+                    # 向双方发送更新后的矩阵状态
+                    await self.send_to_client(match.player1["id"], result)
+                    await self.send_to_client(match.player2["id"], result)
+                except Exception as e:
+                    print(f"发送矩阵状态更新时出错: {e}")
+                    await self.send_error_to_client(client_id, f"发送更新失败: {str(e)}")
         else:
             # 点击处理失败
             error_msg = result.get("error", "处理点击操作失败")
