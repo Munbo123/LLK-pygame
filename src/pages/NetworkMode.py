@@ -43,23 +43,29 @@ class Network_mode:
         # 打印水果图片数量，用于调试
         print(f"加载了 {len(self.fruit_images)} 个水果图片")
         
+        # 网络客户端和游戏会话对象
+        self.network_client = network_client
+        self.game_session = game_session
+        
         # 游戏相关状态变量
         self.is_ready = False  # 准备状态
         self.game_started = False  # 游戏是否开始
         self.player_score = 0  # 玩家分数
         self.opponent_score = 0  # 对手分数
+        self.game_over = False  # 游戏是否结束
+        self.is_winner = False  # 玩家是否获胜
         
         # 倒计时相关状态
         self.countdown_active = False  # 倒计时是否激活
         self.countdown_seconds = 0     # 倒计时剩余秒数
         
-        # 添加连接和匹配状态变量
-        self.connection_status = "未连接"  # 初始连接状态
-        self.match_status = "请先连接服务器"  # 初始匹配状态
+        # 添加连接和匹配状态变量 - 根据NetworkClient的实际状态初始化
+        self.connection_status = "已连接" if self.network_client.is_connected() else "未连接"  
+        self.match_status = "匹配中" if self.network_client.is_connected() else "请先连接服务器"  
         
         # 添加用户名变量
         self.player_name = player_name  # 自己的用户名
-        self.opponent_name = "None"     # 对手的用户名，初始为None
+        self.opponent_name = self.network_client.opponent_name or "None"  # 从NetworkClient获取对手名称
         
         # 记录上一帧的时间，用于计算时间差
         self.last_time = pygame.time.get_ticks() / 1000.0
@@ -121,10 +127,6 @@ class Network_mode:
         self.animations = []
         self.elimination_animations = []
 
-        # 网络客户端和游戏会话对象
-        self.network_client = network_client
-        self.game_session = game_session
-
         # 保存事件处理器引用，以便后续可以注销
         self.connection_handler = self.handle_connection_response
         self.match_handler = self.handle_match_success
@@ -153,10 +155,13 @@ class Network_mode:
 
         # 注册时间更新回调
         self.game_session.set_time_update_callback(self.handle_time_update)
+        # 注册游戏结束回调
+        self.game_session.set_game_over_callback(self.handle_game_over)
         
         # 启动连接
-        self.network_client.start()
-        self.network_client.set_user_name(self.player_name)
+        if not self.network_client.is_connected():
+            self.network_client.start()
+            self.network_client.set_user_name(self.player_name)
         
         # 初始状态下准备按钮不可用
         self.update_ready_button_state()
@@ -283,6 +288,22 @@ class Network_mode:
                 
             print(f"更新进度条: 剩余时间={remaining_time}秒, 总时间={total_time}秒")
 
+    def handle_game_over(self, is_winner):
+        """
+        处理游戏结束回调
+        
+        Args:
+            is_winner: 玩家是否获胜
+        """
+        self.game_over = True
+        self.is_winner = is_winner
+        
+        # 停止进度条
+        if self.progress_bar:
+            self.progress_bar.pause()
+        
+        print(f"游戏结束！{'你赢了!' if is_winner else '你输了!'}")
+
     def init_buttons(self):
         # 定义按钮尺寸
         main_button_size = (100, 50)
@@ -312,19 +333,68 @@ class Network_mode:
         for button in self.all_buttons:
             button.draw()
 
-        self.draw_scoreboard()  # 绘制计分板
+        # 如果游戏结束，显示胜利或失败的提示
+        if self.game_over:
+            self.draw_game_over_message()
+        else:
+            self.draw_scoreboard()  # 绘制计分板
 
-        # 如果网络会话存在，绘制游戏元素
-        if self.game_session and self.game_started:
-            self.draw_game_area()   # 绘制游戏区域
-            # 在游戏开始后绘制进度条
-            self.progress_bar.draw()
-            
-        if self.countdown_active:
-            self.draw_countdown()
+            # 如果网络会话存在，绘制游戏元素
+            if self.game_session and self.game_started:
+                self.draw_game_area()   # 绘制游戏区域
+                # 在游戏开始后绘制进度条
+                self.progress_bar.draw()
+                
+            if self.countdown_active:
+                self.draw_countdown()
         
         # 更新显示
         pygame.display.flip()
+
+    def draw_game_over_message(self):
+        """
+        绘制游戏结束消息（胜利或失败）
+        """
+        # 设置文字大小和颜色
+        font = pygame.font.SysFont('fangsong', 72, bold=True)
+        
+        if self.is_winner:
+            # 胜利消息（绿色）
+            message = "你赢了!"
+            color = (0, 200, 0)  # 绿色
+        else:
+            # 失败消息（红色）
+            message = "你输了!"
+            color = (255, 0, 0)  # 红色
+            
+        # 创建文本
+        text_surface = font.render(message, True, color)
+        
+        # 添加阴影效果
+        shadow_surface = font.render(message, True, (50, 50, 50))
+        shadow_rect = shadow_surface.get_rect(center=(self.screen_width // 2 + 3, self.screen_height // 2 + 3))
+        
+        # 计算文本位置（居中）
+        text_rect = text_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
+        
+        # 先绘制阴影，再绘制文本
+        self.screen.blit(shadow_surface, shadow_rect)
+        self.screen.blit(text_surface, text_rect)
+        
+        # 显示最终得分
+        score_font = pygame.font.SysFont('fangsong', 36)
+        player_score_text = f"你的得分: {self.player_score}"
+        opponent_score_text = f"对手得分: {self.opponent_score}"
+        
+        player_score_surface = score_font.render(player_score_text, True, (0, 0, 0))
+        opponent_score_surface = score_font.render(opponent_score_text, True, (0, 0, 0))
+        
+        # 在胜利/失败消息下方显示得分
+        player_score_rect = player_score_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 2 + 70))
+        opponent_score_rect = opponent_score_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 2 + 110))
+        
+        self.screen.blit(player_score_surface, player_score_rect)
+        self.screen.blit(opponent_score_surface, opponent_score_rect)
 
     def draw_countdown(self):
         """绘制倒计时显示"""
@@ -511,18 +581,40 @@ class Network_mode:
         """
         # 断开网络连接
         try:
+            # 先注销所有事件处理器
+            self.network_client.unregister_handler('connection_response', self.connection_handler)
+            self.network_client.unregister_handler('match_success', self.match_handler)
+            self.network_client.unregister_handler('countdown_start', self.countdown_start_handler)
+            self.network_client.unregister_handler('countdown_update', self.countdown_update_handler)
+            self.network_client.unregister_handler('countdown_cancel', self.countdown_cancel_handler)
+            self.network_client.unregister_handler('game_start', self.game_start_handler)
+            
+            # 停止进度条
+            if self.progress_bar:
+                self.progress_bar.pause()
+                self.progress_bar.disable()
+            
+            # 完全断开连接
             self.network_client.stop()
             print("已断开与服务器的连接")
         except Exception as e:
             print(f"断开连接时出错: {e}")
         
-        # 重置游戏会话和状态
+        # 重置所有游戏状态
         self.game_session.reset()
         self.connection_status = "未连接"
         self.match_status = "请先连接服务器"
         self.opponent_name = "None"
         self.is_ready = False
         self.game_started = False
+        self.game_over = False
+        self.is_winner = False
+        self.player_score = 0
+        self.opponent_score = 0
+        
+        # 重置准备按钮状态
+        self.ready_button.set_text("准备")
+        self.ready_button.disable_button()
         
         return 'main_menu', False      
 

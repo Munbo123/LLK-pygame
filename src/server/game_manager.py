@@ -313,7 +313,7 @@ class GameManager:
             
         try:
             # 每秒更新一次
-            update_interval = 1.0
+            update_interval = 0.5
             
             # 游戏计时器循环
             while match.game_timer_active and match.remaining_time > 0:
@@ -332,7 +332,13 @@ class GameManager:
                 # 如果游戏结束(时间耗尽)，处理游戏结束逻辑
                 if game_over:
                     print(f"对局 {match.match_id} 时间耗尽，游戏结束")
-                    # 这里可以添加游戏结束的处理逻辑
+                    # 确定获胜者 (根据得分)
+                    winner_id = self._determine_winner(match)
+                    
+                    # 发送游戏结束消息
+                    game_over_message = match.get_game_over_json(winner_id, "time_up")
+                    await self.notify_players(match, game_over_message)
+                    
                     match.game_timer_active = False
                     break
                 
@@ -345,3 +351,28 @@ class GameManager:
             print(f"游戏计时器运行出错: {e}")
         finally:
             match.game_timer_active = False
+
+    def _determine_winner(self, match):
+        """
+        根据得分和消除数量确定获胜者
+        
+        Args:
+            match: Match对象
+            
+        Returns:
+            str: 获胜玩家的ID，如果平局则返回得分更高的玩家
+        """
+        player1_score = match.player1["score"]
+        player2_score = match.player2["score"]
+        
+        # 得分高的玩家获胜
+        if player1_score > player2_score:
+            return match.player1["id"]
+        elif player2_score > player1_score:
+            return match.player2["id"]
+        else:
+            # 如果得分相同，比较消除数量
+            if match.player1["elimination_count"] >= match.player2["elimination_count"]:
+                return match.player1["id"]
+            else:
+                return match.player2["id"]

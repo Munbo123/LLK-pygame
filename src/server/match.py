@@ -52,7 +52,7 @@ class Match:
         self.countdown_task = None     # 倒计时任务引用
         
         # 游戏时间相关状态
-        self.total_game_time = 60     # 游戏总时间，默认60秒
+        self.total_game_time = 10     # 游戏总时间，默认60秒
         self.remaining_time = self.total_game_time  # 剩余时间
         self.game_timer_active = False  # 游戏计时器是否激活
         self.game_timer_task = None     # 游戏计时器任务引用
@@ -473,3 +473,35 @@ class Match:
         
         # 返回游戏是否结束(时间耗尽)
         return self.remaining_time <= 0
+
+    def get_game_over_json(self, winner_id, reason):
+        """获取游戏结束的JSON表示
+        
+        Args:
+            winner_id: 获胜玩家ID
+            reason: 游戏结束原因
+            
+        Returns:
+            dict: 游戏结束的消息字典
+        """
+        return {
+            "type": "game_over",
+            "data": {
+                "match_id": self.match_id,
+                "winner_id": winner_id,
+                "reason": reason,
+                "scores": {
+                    self.player1["id"]: {
+                        "score": self.player1["score"],
+                        "elimination_count": self.player1["elimination_count"],
+                        "user_name": self.player1["name"]
+                    },
+                    self.player2["id"]: {
+                        "score": self.player2["score"],
+                        "elimination_count": self.player2["elimination_count"],
+                        "user_name": self.player2["name"]
+                    }
+                },
+                "timestamp": int(time.time() * 1000)
+            }
+        }

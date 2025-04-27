@@ -24,6 +24,8 @@ class GameSession:
         self.opponent_ready = False
         self.all_ready = False
         self.game_started = False
+        self.game_over = False  # 游戏是否结束
+        self.winner_id = None   # 获胜者ID
         
         # 得分相关属性
         self.player_score = 0
@@ -54,6 +56,7 @@ class GameSession:
         self.network_client.register_handler('score_update', self._handle_score_update)
         # 注册时间更新消息处理器
         self.network_client.register_handler('time_update', self._handle_time_update)
+        self.network_client.register_handler('game_over', self._handle_game_over)
         
     def _handle_match_success(self, message):
         """
@@ -426,3 +429,65 @@ class GameSession:
             callback: 回调函数，接收参数(remaining_time, total_time)
         """
         self.on_time_update = callback
+        
+    def _handle_game_over(self, message):
+        """
+        处理游戏结束消息
+        
+        Args:
+            message: 游戏结束消息数据
+        """
+        data = message.get("data", {})
+        self.winner_id = data.get("winner_id")
+        reason = data.get("reason", "time_up")
+        
+        # 设置游戏结束状态
+        self.game_over = True
+        
+        print(f"游戏结束！原因: {reason}, 获胜者ID: {self.winner_id}")
+        
+        # 更新最终得分
+        scores = data.get("scores", {})
+        player_id = self.network_client.user_id
+        opponent_id = self.network_client.opponent_id
+        
+        if player_id in scores:
+            player_score_data = scores[player_id]
+            self.player_score = player_score_data.get("score", 0)
+            self.player_elimination_count = player_score_data.get("elimination_count", 0)
+        
+        if opponent_id in scores:
+            opponent_score_data = scores[opponent_id]
+            self.opponent_score = opponent_score_data.get("score", 0)
+            self.opponent_elimination_count = opponent_score_data.get("elimination_count", 0)
+        
+        # 触发回调函数(如果已设置)
+        if hasattr(self, 'on_game_over') and callable(self.on_game_over):
+            self.on_game_over(self.winner_id == player_id)
+            
+    def is_game_over(self):
+        """
+        检查游戏是否已结束
+        
+        Returns:
+            bool: 游戏是否已结束
+        """
+        return self.game_over
+    
+    def is_player_winner(self):
+        """
+        检查玩家是否是获胜者
+        
+        Returns:
+            bool: 玩家是否获胜
+        """
+        return self.winner_id == self.network_client.user_id
+        
+    def set_game_over_callback(self, callback):
+        """
+        设置游戏结束消息的回调函数
+        
+        Args:
+            callback: 回调函数，接收参数(is_player_winner)，表示玩家是否获胜
+        """
+        self.on_game_over = callback

@@ -33,6 +33,7 @@ class NetworkClient:
         self.countdown_active = False  # 倒计时是否激活
         self.countdown_seconds = 0     # 倒计时剩余秒数
         self.game_started = False      # 游戏是否已开始
+        self.game_over = False         # 游戏是否结束
         
         # 消息队列，用于接收从服务器发来的消息
         self.message_queue = Queue()
@@ -50,6 +51,7 @@ class NetworkClient:
             'game_start': [],           # 新增：游戏开始
             'score_update': [],         # 新增：得分更新
             'time_update': [],          # 新增：时间更新
+            'game_over': [],            # 新增：游戏结束
             'error': []
         }
         
