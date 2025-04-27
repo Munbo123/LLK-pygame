@@ -49,6 +49,7 @@ class NetworkClient:
             'countdown_cancel': [],     # 新增：倒计时取消
             'game_start': [],           # 新增：游戏开始
             'score_update': [],         # 新增：得分更新
+            'time_update': [],          # 新增：时间更新
             'error': []
         }
         

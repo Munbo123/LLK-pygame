@@ -80,6 +80,11 @@ class Network_mode:
         self.scoreboard.update_game_status(self.game_started)
         self.scoreboard.update_scores(self.player_score, self.opponent_score)
         
+        # 初始化进度条组件
+        self.progress_bar = Progress_bar(screen=self.screen, total_time=300)
+        # 默认禁用进度条，直到游戏开始
+        self.progress_bar.disable()
+        
         # 初始化玩家和对手的矩阵渲染器
         # 左侧玩家矩阵位置 
         self.left_area_x = 20
@@ -146,7 +151,8 @@ class Network_mode:
         self.network_client.register_handler('countdown_cancel', self.countdown_cancel_handler)
         self.network_client.register_handler('game_start', self.game_start_handler)
 
-        
+        # 注册时间更新回调
+        self.game_session.set_time_update_callback(self.handle_time_update)
         
         # 启动连接
         self.network_client.start()
@@ -257,6 +263,26 @@ class Network_mode:
         
         print("游戏开始!")
 
+    def handle_time_update(self, remaining_time, total_time):
+        """
+        处理时间更新回调
+        
+        Args:
+            remaining_time: 剩余时间(秒)
+            total_time: 总时间(秒)
+        """
+        if self.game_started and self.progress_bar:
+            # 更新进度条的总时间和当前时间
+            self.progress_bar.set_total_time(total_time)
+            self.progress_bar.set_time(remaining_time)
+            
+            # 启用并启动进度条
+            self.progress_bar.enable = True
+            if not self.progress_bar.progress_running:
+                self.progress_bar.start()
+                
+            print(f"更新进度条: 剩余时间={remaining_time}秒, 总时间={total_time}秒")
+
     def init_buttons(self):
         # 定义按钮尺寸
         main_button_size = (100, 50)
@@ -291,8 +317,9 @@ class Network_mode:
         # 如果网络会话存在，绘制游戏元素
         if self.game_session and self.game_started:
             self.draw_game_area()   # 绘制游戏区域
+            # 在游戏开始后绘制进度条
+            self.progress_bar.draw()
             
-        
         if self.countdown_active:
             self.draw_countdown()
         

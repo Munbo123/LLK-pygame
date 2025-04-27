@@ -31,6 +31,10 @@ class GameSession:
         self.player_elimination_count = 0
         self.opponent_elimination_count = 0
         
+        # 时间相关属性
+        self.total_time = 300  # 默认游戏总时间为300秒
+        self.remaining_time = 300  # 剩余时间初始值
+        
         # 初始化消除路径相关属性
         self.elimination_path = None
         self.elimination_player_id = None
@@ -48,6 +52,8 @@ class GameSession:
         self.network_client.register_handler('elimination_path', self._handle_elimination_path)
         # 注册得分更新消息处理器
         self.network_client.register_handler('score_update', self._handle_score_update)
+        # 注册时间更新消息处理器
+        self.network_client.register_handler('time_update', self._handle_time_update)
         
     def _handle_match_success(self, message):
         """
@@ -385,3 +391,38 @@ class GameSession:
             callback: 回调函数，接收参数(player_score, opponent_score)
         """
         self.on_score_update = callback
+        
+    def _handle_time_update(self, message):
+        """
+        处理时间更新消息
+        
+        Args:
+            message: 时间更新消息数据
+        """
+        data = message.get("data", {})
+        self.remaining_time = data.get("remaining_time", 300)
+        self.total_time = data.get("total_time", 300)
+        
+        print(f"更新游戏时间：剩余 {self.remaining_time} 秒，总时间 {self.total_time} 秒")
+        
+        # 触发回调函数(如果已设置)
+        if hasattr(self, 'on_time_update') and callable(self.on_time_update):
+            self.on_time_update(self.remaining_time, self.total_time)
+
+    def get_time_info(self):
+        """
+        获取游戏时间信息
+        
+        Returns:
+            tuple: (剩余时间, 总时间)
+        """
+        return (self.remaining_time, self.total_time)
+        
+    def set_time_update_callback(self, callback):
+        """
+        设置时间更新消息的回调函数
+        
+        Args:
+            callback: 回调函数，接收参数(remaining_time, total_time)
+        """
+        self.on_time_update = callback

@@ -210,6 +210,17 @@ class GameManager:
                 matrix_state = match.get_match_state_json()
                 await self.notify_players(match, json.loads(matrix_state))
                 
+                # 发送初始时间信息
+                time_update = match.get_time_update_json()
+                await self.notify_players(match, time_update)
+                
+                # 启动游戏计时器
+                match.game_timer_active = True
+                match.last_time_update = time.time()
+                match.game_timer_task = asyncio.create_task(
+                    self.run_game_timer(match)
+                )
+                
                 # 更新游戏状态
                 match.game_started = True
                 match.countdown_active = False
@@ -288,3 +299,49 @@ class GameManager:
         if match_id:
             return self.matches.get(match_id)
         return None
+
+    async def run_game_timer(self, match):
+        """
+        运行游戏计时器，定期发送时间更新消息
+        
+        Args:
+            match: Match对象
+        """
+        if not self.client_handler:
+            print("错误: 客户端处理器未设置，无法发送时间更新消息")
+            return
+            
+        try:
+            # 每秒更新一次
+            update_interval = 1.0
+            
+            # 游戏计时器循环
+            while match.game_timer_active and match.remaining_time > 0:
+                # 计算经过的时间
+                current_time = time.time()
+                elapsed = current_time - match.last_time_update
+                match.last_time_update = current_time
+                
+                # 更新剩余时间
+                game_over = match.update_game_time(elapsed)
+                
+                # 每隔一秒发送时间更新
+                time_update = match.get_time_update_json()
+                await self.notify_players(match, time_update)
+                
+                # 如果游戏结束(时间耗尽)，处理游戏结束逻辑
+                if game_over:
+                    print(f"对局 {match.match_id} 时间耗尽，游戏结束")
+                    # 这里可以添加游戏结束的处理逻辑
+                    match.game_timer_active = False
+                    break
+                
+                # 等待下一次更新
+                await asyncio.sleep(update_interval)
+                
+        except asyncio.CancelledError:
+            print(f"对局 {match.match_id} 的游戏计时器被取消")
+        except Exception as e:
+            print(f"游戏计时器运行出错: {e}")
+        finally:
+            match.game_timer_active = False

@@ -51,6 +51,13 @@ class Match:
         self.game_started = False      # 游戏是否已开始
         self.countdown_task = None     # 倒计时任务引用
         
+        # 游戏时间相关状态
+        self.total_game_time = 60     # 游戏总时间，默认60秒
+        self.remaining_time = self.total_game_time  # 剩余时间
+        self.game_timer_active = False  # 游戏计时器是否激活
+        self.game_timer_task = None     # 游戏计时器任务引用
+        self.last_time_update = time.time()  # 上次更新时间的时间戳
+        
         # 存储用于初始化矩阵的元素
         self.elements = elements
         
@@ -435,3 +442,34 @@ class Match:
                 "timestamp": int(time.time() * 1000)
             }
         }
+    
+    def get_time_update_json(self):
+        """获取时间更新的JSON表示
+        
+        Returns:
+            dict: 时间更新的消息字典
+        """
+        return {
+            "type": "time_update",
+            "data": {
+                "match_id": self.match_id,
+                "remaining_time": int(self.remaining_time),
+                "total_time": self.total_game_time,
+                "timestamp": int(time.time() * 1000)
+            }
+        }
+        
+    def update_game_time(self, elapsed_seconds):
+        """更新游戏剩余时间
+        
+        Args:
+            elapsed_seconds: 经过的秒数
+            
+        Returns:
+            bool: 是否游戏结束(时间耗尽)
+        """
+        self.remaining_time -= elapsed_seconds
+        self.remaining_time = max(0, self.remaining_time)
+        
+        # 返回游戏是否结束(时间耗尽)
+        return self.remaining_time <= 0
