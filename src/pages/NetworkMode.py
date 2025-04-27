@@ -319,7 +319,11 @@ class Network_mode:
         """
         绘制计分板
         """
-        # 首先更新计分板状态
+        # 从游戏会话中获取最新得分信息
+        if self.game_session and self.game_started:
+            self.player_score, self.opponent_score = self.game_session.get_scores()
+
+        # 更新计分板状态
         self.scoreboard.update_game_status(self.game_started)
         self.scoreboard.update_scores(self.player_score, self.opponent_score)
         self.scoreboard.update_ready_status(self.is_ready, self.game_session.get_opponent_ready_status() if self.match_status == "匹配成功" else False)
@@ -376,9 +380,9 @@ class Network_mode:
 
         # 从游戏会话获取矩阵数据
         player_matrix_data = self.game_session.get_player_matrix()
-        print(f"玩家矩阵数据: {pprint.pformat(player_matrix_data)}")
+        # print(f"玩家矩阵数据: {pprint.pformat(player_matrix_data)}")
         opponent_matrix_data = self.game_session.get_opponent_matrix()
-        print(f"对手矩阵数据: {pprint.pformat(opponent_matrix_data)}")
+        # print(f"对手矩阵数据: {pprint.pformat(opponent_matrix_data)}")
         
         # 更新玩家矩阵渲染器数据
         self.player_matrix_renderer.update_matrix_data(player_matrix_data)

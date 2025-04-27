@@ -25,6 +25,12 @@ class GameSession:
         self.all_ready = False
         self.game_started = False
         
+        # 得分相关属性
+        self.player_score = 0
+        self.opponent_score = 0
+        self.player_elimination_count = 0
+        self.opponent_elimination_count = 0
+        
         # 初始化消除路径相关属性
         self.elimination_path = None
         self.elimination_player_id = None
@@ -40,6 +46,8 @@ class GameSession:
         self.network_client.register_handler('game_start', self._handle_game_start)
         # 注册新的消除路径消息处理器
         self.network_client.register_handler('elimination_path', self._handle_elimination_path)
+        # 注册得分更新消息处理器
+        self.network_client.register_handler('score_update', self._handle_score_update)
         
     def _handle_match_success(self, message):
         """
@@ -318,3 +326,62 @@ class GameSession:
             callback: 回调函数，接收参数(path, player_id)
         """
         self.on_elimination_path = callback
+
+    def _handle_score_update(self, message):
+        """
+        处理得分更新消息
+        
+        Args:
+            message: 得分更新消息数据
+        """
+        data = message.get("data", {})
+        scores = data.get("scores", {})
+        
+        # 获取玩家ID
+        player_id = self.network_client.user_id
+        opponent_id = self.network_client.opponent_id
+        
+        # 更新玩家得分
+        if player_id in scores:
+            player_score_data = scores[player_id]
+            self.player_score = player_score_data.get("score", 0)
+            self.player_elimination_count = player_score_data.get("elimination_count", 0)
+            print(f"更新玩家得分: {self.player_score}, 消除数量: {self.player_elimination_count}")
+        
+        # 更新对手得分
+        if opponent_id in scores:
+            opponent_score_data = scores[opponent_id]
+            self.opponent_score = opponent_score_data.get("score", 0)
+            self.opponent_elimination_count = opponent_score_data.get("elimination_count", 0)
+            print(f"更新对手得分: {self.opponent_score}, 消除数量: {self.opponent_elimination_count}")
+            
+        # 触发回调函数(如果已设置)
+        if hasattr(self, 'on_score_update') and callable(self.on_score_update):
+            self.on_score_update(self.player_score, self.opponent_score)
+            
+    def get_scores(self):
+        """
+        获取玩家和对手的得分
+        
+        Returns:
+            tuple: (玩家得分, 对手得分)
+        """
+        return (self.player_score, self.opponent_score)
+    
+    def get_elimination_counts(self):
+        """
+        获取玩家和对手的消除数量
+        
+        Returns:
+            tuple: (玩家消除数量, 对手消除数量)
+        """
+        return (self.player_elimination_count, self.opponent_elimination_count)
+        
+    def set_score_update_callback(self, callback):
+        """
+        设置得分更新消息的回调函数
+        
+        Args:
+            callback: 回调函数，接收参数(player_score, opponent_score)
+        """
+        self.on_score_update = callback

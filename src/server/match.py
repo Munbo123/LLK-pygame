@@ -29,7 +29,9 @@ class Match:
             "name": player1_name,
             "ready": False,
             "matrix": None,  # 游戏开始时才初始化矩阵
-            "selected_cells": []  # 存储玩家选中的单元格位置
+            "selected_cells": [],  # 存储玩家选中的单元格位置
+            "score": 0,  # 玩家得分
+            "elimination_count": 0  # 消除的方块对数量
         }
         
         self.player2 = {
@@ -37,7 +39,9 @@ class Match:
             "name": player2_name,
             "ready": False,
             "matrix": None,  # 游戏开始时才初始化矩阵
-            "selected_cells": []  # 存储玩家选中的单元格位置
+            "selected_cells": [],  # 存储玩家选中的单元格位置
+            "score": 0,  # 玩家得分
+            "elimination_count": 0  # 消除的方块对数量
         }
         
         self.created_at = time.time() * 1000  # 毫秒时间戳
@@ -202,12 +206,19 @@ class Match:
                         # 清空选中的单元格
                         player["selected_cells"] = []
                         
+                        # 更新玩家得分和消除计数
+                        player["score"] += 10  # 每消除一对方块得10分
+                        player["elimination_count"] += 1
+                        
+                        print(f"玩家 {player['name']} 消除成功，当前得分: {player['score']}, 消除数量: {player['elimination_count']}")
+                        
                         # 返回消除成功信息及连接路径
                         return {
                             "success": True, 
                             "action": "eliminated", 
                             "positions": [list(cell1_pos), list(cell2_pos)],
-                            "path": [[p[0], p[1]] for p in path]  # 转换路径格式
+                            "path": [[p[0], p[1]] for p in path],  # 转换路径格式
+                            "score_updated": True  # 标记分数已更新
                         }
                     else:
                         # 两个元素不可连接，取消选中状态
@@ -397,4 +408,30 @@ class Match:
             "row": row,
             "col": col,
             "left_elements": left_elements
+        }
+    
+    def get_score_update_json(self):
+        """获取当前得分状态的JSON表示
+        
+        Returns:
+            dict: 得分更新的消息字典
+        """
+        return {
+            "type": "score_update",
+            "data": {
+                "match_id": self.match_id,
+                "scores": {
+                    self.player1["id"]: {
+                        "score": self.player1["score"],
+                        "elimination_count": self.player1["elimination_count"],
+                        "user_name": self.player1["name"]
+                    },
+                    self.player2["id"]: {
+                        "score": self.player2["score"],
+                        "elimination_count": self.player2["elimination_count"],
+                        "user_name": self.player2["name"]
+                    }
+                },
+                "timestamp": int(time.time() * 1000)
+            }
         }

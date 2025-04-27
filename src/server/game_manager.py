@@ -260,6 +260,16 @@ class GameManager:
         # 如果点击操作成功，返回更新后的矩阵状态
         if result.get("success", False):
             matrix_state = match.get_match_state_json()
+            
+            # 如果是消除操作且得分更新，发送得分更新消息
+            if result.get("action") == "eliminated" and result.get("score_updated", False):
+                # 获取得分更新消息
+                score_update = match.get_score_update_json()
+                
+                # 如果有客户端处理器，向双方发送得分更新
+                if self.client_handler:
+                    asyncio.create_task(self.notify_players(match, score_update))
+                    
             return True, matrix_state
         else:
             return False, result
