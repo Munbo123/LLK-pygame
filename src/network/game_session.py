@@ -50,12 +50,9 @@ class GameSession:
         self.network_client.register_handler('ready_status_update', self._handle_ready_status)
         self.network_client.register_handler('matrix_state', self._handle_matrix_state)
         self.network_client.register_handler('game_start', self._handle_game_start)
-        # 注册新的消除路径消息处理器
         self.network_client.register_handler('elimination_path', self._handle_elimination_path)
-        # 注册得分更新消息处理器
         self.network_client.register_handler('score_update', self._handle_score_update)
-        # 注册时间更新消息处理器
-        self.network_client.register_handler('time_update', self._handle_time_update)
+        self.network_client.register_handler('game_time_init', self._handle_game_time_init)
         self.network_client.register_handler('game_over', self._handle_game_over)
         
     def _handle_match_success(self, message):
@@ -430,6 +427,23 @@ class GameSession:
         """
         self.on_time_update = callback
         
+    def _handle_game_time_init(self, message):
+        """
+        处理游戏初始时间消息
+        
+        Args:
+            message: 游戏初始时间消息数据
+        """
+        data = message.get("data", {})
+        self.total_time = data.get("total_time", 300)
+        self.remaining_time = self.total_time
+        
+        print(f"收到游戏初始时间: {self.total_time} 秒")
+        
+        # 触发回调函数(如果已设置)
+        if hasattr(self, 'on_game_time_init') and callable(self.on_game_time_init):
+            self.on_game_time_init(self.total_time)
+        
     def _handle_game_over(self, message):
         """
         处理游戏结束消息
@@ -491,3 +505,12 @@ class GameSession:
             callback: 回调函数，接收参数(is_player_winner)，表示玩家是否获胜
         """
         self.on_game_over = callback
+
+    def set_game_time_init_callback(self, callback):
+        """
+        设置游戏初始时间消息的回调函数
+        
+        Args:
+            callback: 回调函数，接收参数(total_time)
+        """
+        self.on_game_time_init = callback

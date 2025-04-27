@@ -165,7 +165,7 @@ class GameManager:
         else:
             return False, {"error": "无法更新准备状态"}
     
-    async def start_countdown(self, match):
+    async def start_countdown(self, match:Match):
         """
         启动游戏倒计时
         
@@ -210,20 +210,20 @@ class GameManager:
                 matrix_state = match.get_match_state_json()
                 await self.notify_players(match, json.loads(matrix_state))
                 
-                # 发送初始时间信息
-                time_update = match.get_time_update_json()
-                await self.notify_players(match, time_update)
+                # 发送初始游戏时间信息
+                game_time_init = match.get_game_time_init_json()
+                await self.notify_players(match, game_time_init)
                 
-                # 启动游戏计时器
+                # 更新游戏状态
+                match.game_started = True
+                match.countdown_active = False
+                
+                # 启动游戏计时器，仅用于服务端计时，不再发送更新
                 match.game_timer_active = True
                 match.last_time_update = time.time()
                 match.game_timer_task = asyncio.create_task(
                     self.run_game_timer(match)
                 )
-                
-                # 更新游戏状态
-                match.game_started = True
-                match.countdown_active = False
                 
         except Exception as e:
             print(f"倒计时过程中出错: {e}")
@@ -302,17 +302,17 @@ class GameManager:
 
     async def run_game_timer(self, match):
         """
-        运行游戏计时器，定期发送时间更新消息
+        运行游戏计时器，监控游戏时间（不再发送时间更新消息）
         
         Args:
             match: Match对象
         """
         if not self.client_handler:
-            print("错误: 客户端处理器未设置，无法发送时间更新消息")
+            print("错误: 客户端处理器未设置，无法发送游戏结束消息")
             return
             
         try:
-            # 每秒更新一次
+            # 时间更新间隔
             update_interval = 0.5
             
             # 游戏计时器循环
@@ -324,10 +324,6 @@ class GameManager:
                 
                 # 更新剩余时间
                 game_over = match.update_game_time(elapsed)
-                
-                # 每隔一秒发送时间更新
-                time_update = match.get_time_update_json()
-                await self.notify_players(match, time_update)
                 
                 # 如果游戏结束(时间耗尽)，处理游戏结束逻辑
                 if game_over:

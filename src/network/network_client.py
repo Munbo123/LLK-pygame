@@ -45,13 +45,13 @@ class NetworkClient:
             'ready_status_update': [],
             'matrix_state': [],
             'disconnect_response': [],
-            'countdown_start': [],      # 新增：倒计时开始
-            'countdown_update': [],     # 新增：倒计时更新
-            'countdown_cancel': [],     # 新增：倒计时取消
-            'game_start': [],           # 新增：游戏开始
-            'score_update': [],         # 新增：得分更新
-            'time_update': [],          # 新增：时间更新
-            'game_over': [],            # 新增：游戏结束
+            'countdown_start': [],      # 倒计时开始
+            'countdown_update': [],     # 倒计时更新
+            'countdown_cancel': [],     # 倒计时取消
+            'game_start': [],           # 游戏开始
+            'score_update': [],         # 得分更新
+            'game_time_init': [],       # 游戏初始时间
+            'game_over': [],            # 游戏结束
             'error': []
         }
         

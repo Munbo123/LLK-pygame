@@ -153,10 +153,10 @@ class Network_mode:
         self.network_client.register_handler('countdown_cancel', self.countdown_cancel_handler)
         self.network_client.register_handler('game_start', self.game_start_handler)
 
-        # 注册时间更新回调
-        self.game_session.set_time_update_callback(self.handle_time_update)
         # 注册游戏结束回调
         self.game_session.set_game_over_callback(self.handle_game_over)
+        # 注册游戏时间初始化回调
+        self.game_session.set_game_time_init_callback(self.handle_game_time_init)
         
         # 启动连接
         if not self.network_client.is_connected():
@@ -268,26 +268,6 @@ class Network_mode:
         
         print("游戏开始!")
 
-    def handle_time_update(self, remaining_time, total_time):
-        """
-        处理时间更新回调
-        
-        Args:
-            remaining_time: 剩余时间(秒)
-            total_time: 总时间(秒)
-        """
-        if self.game_started and self.progress_bar:
-            # 更新进度条的总时间和当前时间
-            self.progress_bar.set_total_time(total_time)
-            self.progress_bar.set_time(remaining_time)
-            
-            # 启用并启动进度条
-            self.progress_bar.enable = True
-            if not self.progress_bar.progress_running:
-                self.progress_bar.start()
-                
-            print(f"更新进度条: 剩余时间={remaining_time}秒, 总时间={total_time}秒")
-
     def handle_game_over(self, is_winner):
         """
         处理游戏结束回调
@@ -303,6 +283,25 @@ class Network_mode:
             self.progress_bar.pause()
         
         print(f"游戏结束！{'你赢了!' if is_winner else '你输了!'}")
+
+    def handle_game_time_init(self, total_time):
+        """
+        处理游戏初始时间设置
+        
+        Args:
+            total_time: 游戏总时间(秒)
+        """
+        if self.progress_bar:
+            # 设置进度条的总时间和当前时间
+            self.progress_bar.set_total_time(total_time)
+            self.progress_bar.set_time(total_time)
+            
+            # 启用并启动进度条
+            self.progress_bar.enable = True
+            self.progress_bar.reset()
+            self.progress_bar.start()
+            
+            print(f"初始化进度条: 总时间={total_time}秒")
 
     def init_buttons(self):
         # 定义按钮尺寸

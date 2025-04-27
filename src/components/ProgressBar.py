@@ -8,7 +8,7 @@ class Progress_bar:
         screen_width, screen_height = screen.get_size()
         # 用于计时的变量
         self.total_time = total_time # 总时间默认300秒
-        self.pre_time = 0 # 上次计时的时间
+        self.pre_time = pygame.time.get_ticks() # 上次计时的时间，初始化为当前时间
         self.remaining_time = self.total_time # 剩余时间
         self.progress_running = False
         self.enable = True       # 进度条是否启用
@@ -23,12 +23,14 @@ class Progress_bar:
     def draw(self):
         if not self.enable:
             return
+            
+        current_time = pygame.time.get_ticks()
         if self.progress_running:
             # 更新剩余时间
-            self.remaining_time -= (pygame.time.get_ticks() - self.pre_time) / 1000
+            self.remaining_time -= (current_time - self.pre_time) / 1000
             self.remaining_time = max(0, self.remaining_time)
 
-        self.pre_time = pygame.time.get_ticks() # 更新上次计时的时间
+        self.pre_time = current_time # 更新上次计时的时间
 
         '''绘制进度条背景'''
         # 计算进度条宽度
@@ -44,15 +46,10 @@ class Progress_bar:
         # 在进度条上方绘制倒计时文本
         self.screen.blit(text, (self.bar_x + self.bar_width // 3, self.bar_y - 40))
 
-        # 判断是否结束
-        if self.remaining_time <= 0:
-            print("倒计时结束")
-        
-        
-    
     def start(self):
         '''开始计时'''
-        self.progress_running = True         
+        self.progress_running = True
+        self.pre_time = pygame.time.get_ticks()  # 重置计时起点
 
     def pause(self):
         '''暂停计时'''
@@ -64,9 +61,11 @@ class Progress_bar:
     def reset(self):
         '''重置计时器'''
         self.remaining_time = self.total_time
+        self.pre_time = pygame.time.get_ticks()  # 重置计时起点
 
     def set_time(self,current_time:int):
         self.remaining_time = current_time
+        self.pre_time = pygame.time.get_ticks()  # 重置计时起点
 
     def add_time(self,add_time:int):
         self.remaining_time += add_time
@@ -81,4 +80,4 @@ class Progress_bar:
     def disable(self):
         '''禁用进度条'''
         self.enable = False
-        
+

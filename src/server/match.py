@@ -505,3 +505,18 @@ class Match:
                 "timestamp": int(time.time() * 1000)
             }
         }
+
+    def get_game_time_init_json(self):
+        """获取游戏初始时间的JSON表示
+        
+        Returns:
+            dict: 游戏初始时间的消息字典
+        """
+        return {
+            "type": "game_time_init",
+            "data": {
+                "match_id": self.match_id,
+                "total_time": self.total_game_time,
+                "timestamp": int(time.time() * 1000)
+            }
+        }
