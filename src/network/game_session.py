@@ -24,6 +24,10 @@ class GameSession:
         self.opponent_ready = False
         self.all_ready = False
         self.game_started = False
+        
+        # 初始化消除路径相关属性
+        self.elimination_path = None
+        self.elimination_player_id = None
             
         # 注册网络事件处理器
         self._register_network_handlers()
@@ -97,40 +101,33 @@ class GameSession:
         
         # 检查矩阵数据是否存在
         if player_id in matrices and opponent_id in matrices:
-            # 计算当前矩阵状态的哈希值
-            current_hash = hash(str(matrices))
+            # 直接使用服务器发送的数据进行更新
+            print("\n收到矩阵状态更新：")
+            if player_id in matrices:
+                player_matrix = matrices[player_id]
+                matrix_data = player_matrix.get('matrix', [])
+                row = player_matrix.get('row', 0)
+                col = player_matrix.get('col', 0)
+                
+                print(f"玩家矩阵 ({row}x{col}):")
+                pp = pprint.PrettyPrinter(indent=2, width=120)
+                
+                # 打印简化版的矩阵，只显示索引和状态
+                simplified_matrix = []
+                for r in range(min(row, len(matrix_data))):
+                    row_data = []
+                    for c in range(min(col, len(matrix_data[r]))):
+                        cell = matrix_data[r][c]
+                        row_data.append({
+                            'i': cell.get('index', -1),  # 使用'i'代替'index'使输出更紧凑
+                            's': cell.get('status', 'n')[0]  # 只使用状态的首字母
+                        })
+                    simplified_matrix.append(row_data)
+                pp.pprint(simplified_matrix)
             
-            # 如果与上次收到的矩阵状态不同，才处理并打印
-            if current_hash != self.last_matrix_hash:
-                self.last_matrix_hash = current_hash
-                
-                # 使用pprint格式化打印矩阵数据
-                print("\n收到矩阵状态更新：")
-                if player_id in matrices:
-                    player_matrix = matrices[player_id]
-                    matrix_data = player_matrix.get('matrix', [])
-                    row = player_matrix.get('row', 0)
-                    col = player_matrix.get('col', 0)
-                    
-                    print(f"玩家矩阵 ({row}x{col}):")
-                    pp = pprint.PrettyPrinter(indent=2, width=120)
-                    
-                    # 打印简化版的矩阵，只显示索引和状态
-                    simplified_matrix = []
-                    for r in range(min(row, len(matrix_data))):
-                        row_data = []
-                        for c in range(min(col, len(matrix_data[r]))):
-                            cell = matrix_data[r][c]
-                            row_data.append({
-                                'i': cell.get('index', -1),  # 使用'i'代替'index'使输出更紧凑
-                                's': cell.get('status', 'n')[0]  # 只使用状态的首字母
-                            })
-                        simplified_matrix.append(row_data)
-                    pp.pprint(simplified_matrix)
-                
-                # 更新矩阵
-                self._update_matrix_from_data(matrices[player_id], is_player=True)
-                self._update_matrix_from_data(matrices[opponent_id], is_player=False)
+            # 直接更新矩阵
+            self._update_matrix_from_data(matrices[player_id], is_player=True)
+            self._update_matrix_from_data(matrices[opponent_id], is_player=False)
             
     def _update_matrix_from_data(self, matrix_data, is_player=True):
         """

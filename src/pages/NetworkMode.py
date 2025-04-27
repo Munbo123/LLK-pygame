@@ -190,9 +190,6 @@ class Network_mode:
         self.match_status = "匹配成功"
         print(f"匹配成功，对手名称: {self.opponent_name}")
         
-        # 匹配成功时不立即设置游戏开始，等待倒计时结束
-        # self.game_started = True  # 移除这一行
-        
         # 更新准备按钮状态
         self.update_ready_button_state()
 
@@ -292,7 +289,7 @@ class Network_mode:
         self.draw_scoreboard()  # 绘制计分板
 
         # 如果网络会话存在，绘制游戏元素
-        if self.game_session and self.game_session.is_game_started():
+        if self.game_session and self.game_started:
             self.draw_game_area()   # 绘制游戏区域
             
         
@@ -379,7 +376,9 @@ class Network_mode:
 
         # 从游戏会话获取矩阵数据
         player_matrix_data = self.game_session.get_player_matrix()
+        print(f"玩家矩阵数据: {pprint.pformat(player_matrix_data)}")
         opponent_matrix_data = self.game_session.get_opponent_matrix()
+        print(f"对手矩阵数据: {pprint.pformat(opponent_matrix_data)}")
         
         # 更新玩家矩阵渲染器数据
         self.player_matrix_renderer.update_matrix_data(player_matrix_data)
