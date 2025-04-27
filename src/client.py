@@ -115,7 +115,7 @@ while not done:
 # 在程序退出前关闭所有可能存在的网络连接
 if 'network_mode' in pages:
     # 获取联机模式页面中的网络客户端
-    network_mode = pages['network_mode']
+    network_mode:Network_mode = pages['network_mode']
     if hasattr(network_mode, 'network_client') and network_mode.network_client.is_connected():
         network_mode.network_client.stop()
 
