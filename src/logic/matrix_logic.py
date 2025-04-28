@@ -1,61 +1,129 @@
 import random
-import pygame
 
 
 class Matrix():
-    def __init__(self,row:int,col:int,elements:list[pygame.Surface]):
-        if row <= 0 or col <= 0:
-            raise ValueError("行列数必须大于0")
-        if row*col%2 == 1:
-            raise ValueError("行列数乘积必须为偶数")
+    def __init__(self, row, col, element_len:int=10,seed=None):
+        """
+        初始化矩阵
+        
+        Args:
+            row: 行数
+            col: 列数
+            element_len: 元素集合的长度
+            seed: 随机种子，用于初始化矩阵
+        
+        matrix: 二维矩阵，存储元素信息，信息包含：{
+            "index": 元素索引,
+            "status": 元素状态（normal, selected, eliminated）
+        }
+        """
         self.row = row
         self.col = col
-        self.elements = elements
-        self.matrix = [[None for j in range(col)] for i in range(row)]
-        self.left_elements = row*col  # 剩余元素数目
-        self.init_matrix()
-
-    def init_matrix(self):
-        '''用元素初始化矩阵'''
-        temp = []  # 临时列表,用来存储将要生成的元素的序号
+        if row * col % 2 != 0:
+            raise ValueError("行列数乘积必须为偶数")
+        self.matrix = [[None]*col for _ in range(row)]
+        self.selected_pos = None
+        self.path = None
+        self.left_elements = row * col
+        self.element_len = element_len    # 仅存储元素数量，元素对象由客户端自行加载
+        self.init_matrix(seed=None)  # 初始化矩阵
+    
+    def init_matrix(self,seed):
+        if seed is not None:
+            random.seed(seed)
+        temp = []
         for _ in range(self.row*self.col//2):
-            x = random.randint(0,len(self.elements)-1)  # 随机生成一个元素的序号
-            temp.append(x)  
-            temp.append(x)  # 将元素序号添加两次,以便生成成对的元素
-        random.shuffle(temp)    # 打乱元素序号的顺序
+            temp_index = random.randint(0, self.element_len-1)
+            temp.append(temp_index)
+            temp.append(temp_index)
+        random.shuffle(temp)
 
-        # 将元素序号填入矩阵中,矩阵元素结构如下：
-        '''
-        matrix[i][j] = {
-            'index': index,  # 元素的序号
-            'status': status,  # 元素的状态（是否被消除）,初始为normal
-        }
-        '''
-        index = 0
         for i in range(self.row):
             for j in range(self.col):
                 self.matrix[i][j] = {
-                    'index': temp[index],  # 元素的序号
-                    'status': 'normal',  # 元素的状态（是否被消除）,初始为normal
+                    "index": temp.pop(),
+                    "status": "normal"
                 }
-                index += 1
 
-    def get_matrix(self):
-        '''返回矩阵'''
-        return self.matrix
+    def get_row(self):
+        """
+        获取矩阵行数
+        
+        Returns:
+            int: 行数
+        """
+        return self.row
     
-    def get_cell(self,row:int,col:int):
-        '''返回指定位置的元素'''
-        if row < 0 or row >= self.row or col < 0 or col >= self.col:
-            raise ValueError("行列数越界")
-        return self.matrix[row][col]
+    def get_col(self):
+        """
+        获取矩阵列数
+        
+        Returns:
+            int: 列数
+        """
+        return self.col
+        
+    def get_left_elements(self):
+        """
+        获取剩余元素数量
+        
+        Returns:
+            int: 剩余元素数量
+        """
+        return self.left_elements
+        
+    def get_cell(self, row, col):
+        """
+        获取指定位置的格子信息
+        
+        Args:
+            row: 行索引
+            col: 列索引
+            
+        Returns:
+            dict: 格子信息
+        """
+        if 0 <= row < self.row and 0 <= col < self.col:
+            return self.matrix[row][col]
+        return None
+        
+    def set_status(self, row, col, status):
+        """
+        设置指定位置的状态
+        
+        Args:
+            row: 行索引
+            col: 列索引
+            status: 新状态
+            
+        Returns:
+            bool: 是否设置成功
+        """
+        if 0 <= row < self.row and 0 <= col < self.col:
+            self.matrix[row][col]["status"] = status
+            
+            # 如果状态为消除，更新剩余元素数量
+            if status == "eliminated":
+                self.decrease_elements()
+                
+            return True
+        return False
+    
+    def get_matrix(self) -> list[list[dict]]:
+        """
+        获取整个矩阵
+        
+        Returns:
+            list: 矩阵数据
+        """
+        return self.matrix
     
     def eliminate_cell(self,row:int,col:int):
         '''消除指定位置的元素'''
         if row < 0 or row >= self.row or col < 0 or col >= self.col:
             raise ValueError("行列数越界")
         self.matrix[row][col]['status'] = 'eliminated'  # 将元素状态改为eliminated
-        self.left_elements -= 1  # 剩余元素数目减1
+        self.decrease_elements()  # 使用decrease_elements方法减少元素计数
 
     def is_eliminable(self, row1:int, col1:int, row2:int, col2:int):
         '''判断两个元素是否可以消除
@@ -194,41 +262,7 @@ class Matrix():
         
         return []
 
-    def get_left_elements(self) -> int:
-        '''返回剩余元素数目'''
-        return self.left_elements
-    
-    def get_row(self):
-        '''返回行数'''
-        return self.row
-    
-    def get_col(self):
-        '''返回列数'''
-        return self.col
-    
-    def get_elements(self,index:int) -> pygame.Surface:
-        '''返回元素'''
-        if index < 0 or index >= len(self.elements):
-            raise ValueError("元素序号越界")
-        return self.elements[index]
-    
-    def get_elements_width(self) -> int:
-        '''返回元素宽度'''
-        return self.elements[0].get_width()
-    
-    def get_elements_height(self) -> int:
-        '''返回元素高度'''
-        return self.elements[0].get_height()
-    
-    def set_status(self,row:int,col:int,status:str):
-        '''设置元素状态'''
-        if row < 0 or row >= self.row or col < 0 or col >= self.col:
-            raise ValueError("行列数越界")
-        # if status not in ['normal', 'eliminated']:
-        #     raise ValueError("状态错误")
-        self.matrix[row][col]['status'] = status
-
-    def promote(self):
+    def promote(self) -> list[tuple[int,int]]:
         '''寻找矩阵中可以消除的一对元素
         
         遍历整个矩阵，找到第一对可以消除的元素，并返回它们的连接路径
@@ -262,7 +296,7 @@ class Matrix():
         # 如果没有找到可以消除的元素对，返回空列表
         return []
 
-    def rearrange_matrix(self):
+    def rearrange_matrix(self) -> None:
         '''重排矩阵中的元素
         
         将矩阵中所有未被消除的元素（状态不是'eliminated'的元素）重新排列。
@@ -287,3 +321,18 @@ class Matrix():
                     # 只替换未消除的元素位置
                     self.matrix[row][col] = active_elements[element_index]
                     element_index += 1
+
+    def decrease_elements(self, count=1) -> int:
+        """
+        减少剩余元素计数
+        
+        Args:
+            count: 要减少的元素数量，默认为1
+            
+        Returns:
+            int: 更新后的剩余元素数量
+        """
+        self.left_elements -= count
+        if self.left_elements < 0:
+            self.left_elements = 0
+        return self.left_elements

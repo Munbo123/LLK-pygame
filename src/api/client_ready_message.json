@@ -1,0 +1,12 @@
+{
+  "type": "ready_message",
+  "data": {
+    "ready_status": true,
+    "match_id": "match_id_string",
+    "user": {
+      "id": "user_id_string",
+      "name": "user_name_string"
+    },
+    "timestamp": 1714132800000
+  }
+}

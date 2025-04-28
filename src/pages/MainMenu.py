@@ -3,20 +3,19 @@ import sys
 import os
 
 
-from components.Button import Button
-from pages.BasicMode import Basic_mode
-from pages.LeisureMode import Leisure_mode
+from src.components.Button import Button
+from src.pages.BasicMode import Basic_mode
+from src.pages.LeisureMode import Leisure_mode
 
+from src.utils.config import get_resource_path
+
+icon_path = get_resource_path('assets/LLK.ico')
+main_menu_background_path = get_resource_path('assets/llk_main.bmp')
 
 # 设置窗口标题和图标
 pygame.display.set_caption('欢乐连连看')
-icon = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\LLK.ico")
+icon = pygame.image.load(icon_path)
 pygame.display.set_icon(icon) # 可以填img
-
-
-# 加载背景图片
-main_menu_background = pygame.image.load(r"C:\Users\19722\Desktop\Coding\Study\AlgorithmExperiment\experiment3\res\连连看游戏综合实践\任务5-界面设计\实验素材\llk_main.bmp")
-
 
 
 
@@ -24,68 +23,82 @@ class Main_menu:
     def __init__(self,screen:pygame.Surface):
         # 屏幕对象
         self.screen = screen
+        # 加载背景图片
+        self.main_menu_background = pygame.image.load(main_menu_background_path)
+        # 初始化按钮
+        self.init_buttons()
+
+    def init_buttons(self):
+        mode_button_size = (100, 50)
+        other_button_size = (75, 35)
+        self.all_buttons = []
+
+        # 模式按钮
+        self.basic_mode_button = Button(screen=self.screen,position=(30, 215), rect=mode_button_size, text="基本模式",font='fangsong')  # 基本模式
+        self.all_buttons.append(self.basic_mode_button)
+        
+        self.leisure_mode_button = Button(screen=self.screen,position=(30, 315), rect=mode_button_size, text="休闲模式",font='fangsong')    # 休闲模式
+        self.all_buttons.append(self.leisure_mode_button)
+
+        self.level_mode_button = Button(screen=self.screen,position=(30, 415), rect=mode_button_size, text="联机模式",font='fangsong')   # 联机模式
+        self.all_buttons.append(self.level_mode_button)
+        
+        # 右下角按钮绘制
+        self.chart_button = Button(screen=self.screen,position=(800-75*3, 600-35), rect=other_button_size, text="排行榜",font='fangsong')    # 排行榜
+        self.all_buttons.append(self.chart_button)
+
+        self.setting_button = Button(screen=self.screen,position=(800-75*2, 600-35), rect=other_button_size, text="设置",font='fangsong')    # 设置
+        self.all_buttons.append(self.setting_button)
+
+        self.help_button = Button(screen=self.screen,position=(800-75*1, 600-35), rect=other_button_size, text="帮助",font='fangsong')   # 帮助
+        self.all_buttons.append(self.help_button)
 
     def draw(self):
         # 清屏
         self.screen.fill((255, 255, 255))
 
         # 绘制背景
-        self.screen.blit(main_menu_background, (0, 0))
+        self.screen.blit(self.main_menu_background, (0, 0))
 
-        # 绘制模式按钮
-        button_size = (100, 50)
-        basic_mode_button = Button(screen=self.screen,position=(30, 215), rect=button_size, text="基本模式",font='fangsong').draw()
-        leisure_mode_button = Button(screen=self.screen,position=(30, 315), rect=button_size, text="休闲模式",font='fangsong').draw()
-        level_mode_button = Button(screen=self.screen,position=(30, 415), rect=button_size, text="联机模式",font='fangsong').draw()
-        
-        # 右下角按钮绘制
-        button_size = (75, 35)
-        chart_button = Button(screen=self.screen,position=(800-75*3, 600-35), rect=button_size, text="排行榜",font='fangsong').draw()
-        setting_button = Button(screen=self.screen,position=(800-75*2, 600-35), rect=button_size, text="设置",font='fangsong').draw()
-        help_button = Button(screen=self.screen,position=(800-75*1, 600-35), rect=button_size, text="帮助",font='fangsong').draw()
+        # 绘制按钮
+        for button in self.all_buttons:
+            button.draw()
 
         pygame.display.flip()
 
-        self.buttons = {
-            'basic_mode_button': basic_mode_button,
-            'leisure_mode_button': leisure_mode_button,
-            'level_mode_button': level_mode_button,
-            'chart_button': chart_button,
-            'setting_button': setting_button,
-            'help_button': help_button
-        }
 
     def handle(self):
         # 要返回的状态
-        current_page = None
+        next_page_id = None
         done = False
-        basic_mode_button:Button = self.buttons['basic_mode_button']
-        leisure_mode_button:Button = self.buttons['leisure_mode_button']
-        level_mode_button:Button = self.buttons['level_mode_button']
-        chart_button:Button = self.buttons['chart_button']
-        setting_button:Button = self.buttons['setting_button']
-        help_button:Button = self.buttons['help_button']
 
+        # 处理事件
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if basic_mode_button.collidepoint(event.pos):
+                if self.basic_mode_button.collidepoint(event.pos):
                     print("基本模式按钮 clicked")
-                    current_page = Basic_mode(screen=self.screen)
+                    next_page_id = 'basic_mode'
                     pygame.display.set_caption('欢乐连连看-基本模式')
-                if leisure_mode_button.collidepoint(event.pos):
+                elif self.leisure_mode_button.collidepoint(event.pos):
                     print("休闲模式按钮 clicked")
-                    current_page = Leisure_mode(screen=self.screen)
+                    next_page_id = 'leisure_mode'
                     pygame.display.set_caption('欢乐连连看-休闲模式')
-                if level_mode_button.collidepoint(event.pos):
-                    print("关卡模式按钮 clicked")
-                if chart_button.collidepoint(event.pos):
+                elif self.level_mode_button.collidepoint(event.pos):
+                    print("联机模式按钮 clicked")
+                    next_page_id = 'network_mode'
+                    pygame.display.set_caption('欢乐连连看-联机模式')
+                elif self.chart_button.collidepoint(event.pos):
                     print("排行榜按钮 clicked")
-                if setting_button.collidepoint(event.pos):
+                elif self.setting_button.collidepoint(event.pos):
                     print("设置按钮 clicked")
-                if help_button.collidepoint(event.pos):
+                    next_page_id = 'setting_page'
+                    pygame.display.set_caption('欢乐连连看-设置')
+                elif self.help_button.collidepoint(event.pos):
                     print("帮助按钮 clicked")
+                else:
+                    print("点击了其他区域")
         
-        return (current_page, done)
+        return (next_page_id, done)
 

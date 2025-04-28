@@ -1,0 +1,7 @@
+{
+  "type": "disconnect_request",
+  "data": {
+    "user_id": "user_id_string",
+    "timestamp": 1714132800000
+  }
+}

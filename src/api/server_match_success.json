@@ -1,0 +1,15 @@
+{
+  "type": "match_success",
+  "data": {
+    "player1": {
+      "id": "user1_id_string",
+      "name": "user1_name_string"
+    },
+    "player2": {
+      "id": "user2_id_string",
+      "name": "user2_name_string"
+    },
+    "match_id": "match_id_string",
+    "timestamp": 1714132800000
+  }
+}

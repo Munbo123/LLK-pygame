@@ -1,0 +1,9 @@
+{
+  "type": "connection_response",
+  "data": {
+    "connection_status": "connected",
+    "user_id": "assigned_user_id_string",
+    "message": "成功连接到服务器",
+    "timestamp": 1714132800000
+  }
+}

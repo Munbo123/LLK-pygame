@@ -1,0 +1,4 @@
+websockets
+pygame
+asyncio
+pyinstaller

@@ -1,0 +1,19 @@
+{
+  "type": "matrix_state",
+  "data": {
+    "match_id": "match_id_string",
+    "matrices": {
+      "user_id_string1": [
+        [{"'index":0,"status":"normal"},{"'index":0,"status":"normal"},{"'index":0,"status":"normal"}],
+        [{"'index":0,"status":"normal"},{"'index":0,"status":"normal"},{"'index":0,"status":"normal"}],
+        [{"'index":0,"status":"normal"},{"'index":0,"status":"normal"},{"'index":0,"status":"normal"}]
+      ],
+      "user_id_string2": [
+        [{"'index":0,"status":"normal"},{"'index":0,"status":"normal"},{"'index":0,"status":"normal"}],
+        [{"'index":0,"status":"normal"},{"'index":0,"status":"normal"},{"'index":0,"status":"normal"}],
+        [{"'index":0,"status":"normal"},{"'index":0,"status":"normal"},{"'index":0,"status":"normal"}]
+      ]
+    },
+    "timestamp": 1714132800000
+  }
+}
