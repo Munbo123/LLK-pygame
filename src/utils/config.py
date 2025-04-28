@@ -8,6 +8,7 @@ CONFIG_FILE = './config/game_config.json'
 DEFAULT_CONFIG = {
     "rows": 10,
     "columns": 10,
+    "username": "player",  # 添加默认用户名
     # 可以在此添加更多默认配置项
 }
 

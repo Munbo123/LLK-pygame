@@ -1,7 +1,7 @@
 import pygame
 
 from src.components.Button import Button
-from src.utils.config import load_config, update_game_size
+from src.utils.config import load_config, update_game_size, update_config
 
 
 main_menu_background_path = r"./assets/llk_main.bmp"
@@ -20,6 +20,7 @@ class Setting_page:
         self.config = load_config()
         self.rows = self.config.get("rows", 10)
         self.columns = self.config.get("columns", 10)
+        self.username = self.config.get("username", "player")  # 添加用户名配置读取
         
         # 初始化按钮
         self.init_buttons()
@@ -32,6 +33,12 @@ class Setting_page:
         # 保存消息提示
         self.save_message = ""
         self.message_timer = 0
+        
+        # 用户名输入相关变量
+        self.username_active = False  # 是否正在输入用户名
+        self.username_input_rect = pygame.Rect(self.screen_width // 2 - 100, 395, 200, 40)
+        self.username_cursor_visible = True
+        self.username_cursor_timer = 0
     
     def init_buttons(self):
         # 创建按钮列表
@@ -126,6 +133,34 @@ class Setting_page:
         col_value = self.value_font.render(f"{self.columns}", True, (255, 255, 0))
         self.screen.blit(col_value, (self.screen_width // 2 - 10, 295))
         
+        # 绘制用户名设置
+        username_label = self.label_font.render("用户名:", True, (255, 255, 255))
+        self.screen.blit(username_label, (self.screen_width // 2 - 150, 400))
+        
+        # 绘制用户名输入框
+        username_box_color = (100, 100, 200) if self.username_active else (70, 70, 70)
+        pygame.draw.rect(self.screen, username_box_color, self.username_input_rect, 2)
+        
+        # 绘制用户名文本
+        username_surface = self.label_font.render(self.username, True, (255, 255, 0))
+        self.screen.blit(username_surface, (self.username_input_rect.x + 5, self.username_input_rect.y + 5))
+        
+        # 如果正在输入用户名，显示闪烁的光标
+        if self.username_active:
+            # 每30帧切换光标显示状态
+            self.username_cursor_timer += 1
+            if self.username_cursor_timer > 30:
+                self.username_cursor_visible = not self.username_cursor_visible
+                self.username_cursor_timer = 0
+                
+            if self.username_cursor_visible:
+                cursor_pos = self.label_font.size(self.username)[0]
+                pygame.draw.line(self.screen, 
+                                (255, 255, 255), 
+                                (self.username_input_rect.x + 5 + cursor_pos, self.username_input_rect.y + 5), 
+                                (self.username_input_rect.x + 5 + cursor_pos, self.username_input_rect.y + 35), 
+                                2)
+        
         # 绘制按钮
         for button in self.all_buttons:
             button.draw()
@@ -153,6 +188,14 @@ class Setting_page:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 
+                # 检查用户点击了用户名输入框
+                if self.username_input_rect.collidepoint(mouse_pos):
+                    self.username_active = True
+                    self.username_cursor_visible = True
+                    self.username_cursor_timer = 0
+                else:
+                    self.username_active = False
+                
                 # 检查行列数增减按钮
                 if self.row_plus_button.collidepoint(mouse_pos):
                     self.rows = min(20, self.rows + 1)  # 设置上限为20行
@@ -174,12 +217,29 @@ class Setting_page:
                 # 检查保存按钮
                 elif self.save_button.collidepoint(mouse_pos):
                     # 保存设置
-                    if update_game_size(self.rows, self.columns):
+                    save_successful = update_game_size(self.rows, self.columns)
+                    # 保存用户名
+                    username_saved = update_config("username", self.username)
+                    
+                    if save_successful and username_saved:
                         # 显示保存成功提示
                         self.save_message = "设置已保存"
                         self.message_timer = 60  # 显示约2秒（假设游戏运行在30FPS）
                     else:
                         self.save_message = "保存失败"
                         self.message_timer = 60
+            
+            # 处理键盘事件（用于用户名输入）
+            if event.type == pygame.KEYDOWN and self.username_active:
+                if event.key == pygame.K_RETURN:
+                    # 按回车完成输入
+                    self.username_active = False
+                elif event.key == pygame.K_BACKSPACE:
+                    # 退格键删除字符
+                    self.username = self.username[:-1]
+                else:
+                    # 添加字符（仅添加有效字符且限制长度）
+                    if len(self.username) < 12 and event.unicode.isprintable():
+                        self.username += event.unicode
         
         return next_page_id, done

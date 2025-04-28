@@ -99,7 +99,7 @@ class GameSession:
         if self.all_ready and not self.game_started:
             self.game_started = True
             
-    def _handle_matrix_state(self, message):
+    def _handle_matrix_state(self, message:dict):
         """
         处理矩阵状态更新消息
         
@@ -116,29 +116,7 @@ class GameSession:
         # 检查矩阵数据是否存在
         if player_id in matrices and opponent_id in matrices:
             # 直接使用服务器发送的数据进行更新
-            print("\n收到矩阵状态更新：")
-            if player_id in matrices:
-                player_matrix = matrices[player_id]
-                matrix_data = player_matrix.get('matrix', [])
-                row = player_matrix.get('row', 0)
-                col = player_matrix.get('col', 0)
-                
-                print(f"玩家矩阵 ({row}x{col}):")
-                pp = pprint.PrettyPrinter(indent=2, width=120)
-                
-                # 打印简化版的矩阵，只显示索引和状态
-                simplified_matrix = []
-                for r in range(min(row, len(matrix_data))):
-                    row_data = []
-                    for c in range(min(col, len(matrix_data[r]))):
-                        cell = matrix_data[r][c]
-                        row_data.append({
-                            'i': cell.get('index', -1),  # 使用'i'代替'index'使输出更紧凑
-                            's': cell.get('status', 'n')[0]  # 只使用状态的首字母
-                        })
-                    simplified_matrix.append(row_data)
-                pp.pprint(simplified_matrix)
-            
+            print("收到矩阵状态更新")
             # 直接更新矩阵
             self._update_matrix_from_data(matrices[player_id], is_player=True)
             self._update_matrix_from_data(matrices[opponent_id], is_player=False)
@@ -477,7 +455,7 @@ class GameSession:
         
         # 触发回调函数(如果已设置)
         if hasattr(self, 'on_game_over') and callable(self.on_game_over):
-            self.on_game_over(self.winner_id == player_id)
+            self.on_game_over(player_id in self.winner_id)
             
     def is_game_over(self):
         """

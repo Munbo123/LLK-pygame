@@ -6,6 +6,7 @@ import websockets
 import pygame
 import sys
 import os
+import argparse  # 导入argparse模块用于命令行参数解析
 
 # 添加项目根目录到路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -71,9 +72,15 @@ class GameServer:
 
 def main():
     """主函数，启动服务器"""
-    # 使用硬编码的端口和主机地址
-    host = 'localhost'
-    port = 8765
+    # 设置命令行参数解析器
+    parser = argparse.ArgumentParser(description='连连看游戏服务器')
+    parser.add_argument('--host', type=str, default='localhost', help='服务器主机地址 (默认: localhost)')
+    parser.add_argument('--port', type=int, default=8765, help='服务器端口号 (默认: 8765)')
+    
+    # 解析命令行参数
+    args = parser.parse_args()
+    host = args.host
+    port = args.port
     
     print(f"正在启动服务器于 {host}:{port}...")
     server = GameServer(host, port)

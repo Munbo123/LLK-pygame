@@ -5,7 +5,7 @@ import uuid
 import time
 import asyncio
 import json  # 添加 json 模块导入
-from .match import Match
+from src.server.match import Match
 
 
 class GameManager:
@@ -300,7 +300,7 @@ class GameManager:
             return self.matches.get(match_id)
         return None
 
-    async def run_game_timer(self, match):
+    async def run_game_timer(self, match:Match):
         """
         运行游戏计时器，监控游戏时间（不再发送时间更新消息）
         
@@ -348,7 +348,7 @@ class GameManager:
         finally:
             match.game_timer_active = False
 
-    def _determine_winner(self, match):
+    def _determine_winner(self, match:Match):
         """
         根据得分和消除数量确定获胜者
         
@@ -363,12 +363,9 @@ class GameManager:
         
         # 得分高的玩家获胜
         if player1_score > player2_score:
-            return match.player1["id"]
+            return [match.player1["id"]]
         elif player2_score > player1_score:
-            return match.player2["id"]
+            return [match.player2["id"]]
         else:
-            # 如果得分相同，比较消除数量
-            if match.player1["elimination_count"] >= match.player2["elimination_count"]:
-                return match.player1["id"]
-            else:
-                return match.player2["id"]
+            # 平局，返回两个玩家的ID
+            return [match.player1["id"], match.player2["id"]]

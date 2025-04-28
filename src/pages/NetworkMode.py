@@ -16,14 +16,12 @@ from src.network.game_session import GameSession
 game_background_path = r"./assets/fruit_bg.bmp"
 sheet_path = r"./assets/fruit_element.bmp"
 mask_path = r"./assets/fruit_mask.bmp"
-player_name = "Munbo123" # 玩家名称
 
 class Network_mode:
     def __init__(self, screen:pygame.Surface,network_client:NetworkClient, game_session:GameSession):
         # 读取配置信息
         config = load_config()
-        self.row = config.get("rows", 10)  # 默认行数为10
-        self.col = config.get("columns", 10)  # 默认列数为10
+        self.player_name = config.get("username", 'player')  # 从配置中获取用户名，默认值为player_name
         self.row = 6  # 设置为与服务端相同的行数
         self.col = 6  # 设置为与服务端相同的列数
 
@@ -64,7 +62,7 @@ class Network_mode:
         self.match_status = "匹配中" if self.network_client.is_connected() else "请先连接服务器"  
         
         # 添加用户名变量
-        self.player_name = player_name  # 自己的用户名
+        self.player_name = self.player_name  # 自己的用户名
         self.opponent_name = self.network_client.opponent_name or "None"  # 从NetworkClient获取对手名称
         
         # 记录上一帧的时间，用于计算时间差

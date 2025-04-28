@@ -171,4 +171,4 @@ class MatrixRenderer:
                             self.screen.blit(fruit_image, (image_x, image_y))
                 except Exception as e:
                     # 绘制过程中出错，略过该单元格
-                    pass
+                    print(f"绘制矩阵时出错: {e}")
