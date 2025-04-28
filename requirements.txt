@@ -1,4 +1,5 @@
 websockets
 pygame
+pygame_textinput
 asyncio
 pyinstaller

@@ -1,21 +1,24 @@
 import pygame
+import os
+
+# 设置环境变量以支持中文输入法
+os.environ['SDL_IM_MODULE'] = 'ime'  # Windows系统使用ime
 
 from src.components.Button import Button
 from src.utils.config import load_config, update_game_size, update_config
 
 
-main_menu_background_path = r"./assets/llk_main.bmp"
-
 class Setting_page:
     def __init__(self, screen):
         self.screen = screen
         self.screen_width = screen.get_width()
-        self.screen_height = screen.get_height()
-        
-        # 加载背景图像 (使用和主界面相同的背景)
-        self.background = pygame.image.load(main_menu_background_path).convert()
-        self.background = pygame.transform.scale(self.background, (self.screen_width, self.screen_height))
-        
+        self.screen_height = self.screen.get_height()
+
+        # 启用文本输入模式，改善中文输入支持
+        pygame.key.start_text_input()
+        # 可以设置输入区域，提高输入法候选框的显示位置
+        pygame.key.set_text_input_rect(pygame.Rect(self.screen_width // 2 - 30, 395, 200, 40))
+
         # 加载配置
         self.config = load_config()
         self.rows = self.config.get("rows", 10)
@@ -36,7 +39,7 @@ class Setting_page:
         
         # 用户名输入相关变量
         self.username_active = False  # 是否正在输入用户名
-        self.username_input_rect = pygame.Rect(self.screen_width // 2 - 100, 395, 200, 40)
+        self.username_input_rect = pygame.Rect(self.screen_width // 2 - 30, 395, 200, 40)
         self.username_cursor_visible = True
         self.username_cursor_timer = 0
     
@@ -110,10 +113,7 @@ class Setting_page:
     def draw(self):
         # 清屏
         self.screen.fill((30, 30, 30))  # 使用深灰色背景以便按钮更清晰
-
-        # 绘制背景
-        # self.screen.blit(self.background, (0, 0))
-        
+   
         # 绘制标题
         title_text = self.title_font.render("游戏设置", True, (255, 255, 255))
         title_rect = title_text.get_rect(center=(self.screen_width // 2, 80))
@@ -145,6 +145,7 @@ class Setting_page:
         username_surface = self.label_font.render(self.username, True, (255, 255, 0))
         self.screen.blit(username_surface, (self.username_input_rect.x + 5, self.username_input_rect.y + 5))
         
+
         # 如果正在输入用户名，显示闪烁的光标
         if self.username_active:
             # 每30帧切换光标显示状态
@@ -198,13 +199,13 @@ class Setting_page:
                 
                 # 检查行列数增减按钮
                 if self.row_plus_button.collidepoint(mouse_pos):
-                    self.rows = min(20, self.rows + 1)  # 设置上限为20行
+                    self.rows = min(10, self.rows + 1)  # 设置上限为10行
                     
                 elif self.row_minus_button.collidepoint(mouse_pos):
                     self.rows = max(4, self.rows - 1)  # 设置下限为4行
                     
                 elif self.col_plus_button.collidepoint(mouse_pos):
-                    self.columns = min(20, self.columns + 1)  # 设置上限为20列
+                    self.columns = min(15, self.columns + 1)  # 设置上限为15列
                     
                 elif self.col_minus_button.collidepoint(mouse_pos):
                     self.columns = max(4, self.columns - 1)  # 设置下限为4列
@@ -216,18 +217,25 @@ class Setting_page:
                 
                 # 检查保存按钮
                 elif self.save_button.collidepoint(mouse_pos):
-                    # 保存设置
-                    save_successful = update_game_size(self.rows, self.columns)
-                    # 保存用户名
-                    username_saved = update_config("username", self.username)
-                    
-                    if save_successful and username_saved:
-                        # 显示保存成功提示
-                        self.save_message = "设置已保存"
-                        self.message_timer = 60  # 显示约2秒（假设游戏运行在30FPS）
-                    else:
-                        self.save_message = "保存失败"
+                    if self.rows*self.columns%2 != 0:
+                        self.save_message = "行列数乘积必须为偶数！"
                         self.message_timer = 60
+                    else:
+                        save_status = []
+                        # 保存行数
+                        save_status.append(update_config("rows", self.rows))
+                        # 保存列数
+                        save_status.append(update_config("columns", self.columns))
+                        # 保存用户名
+                        save_status.append(update_config("username", self.username))
+                    
+                        if save_status.count(True) == len(save_status):
+                            # 显示保存成功提示
+                            self.save_message = "设置已保存"
+                            self.message_timer = 60  # 显示约2秒（假设游戏运行在30FPS）
+                        else:
+                            self.save_message = "保存失败"
+                            self.message_timer = 60
             
             # 处理键盘事件（用于用户名输入）
             if event.type == pygame.KEYDOWN and self.username_active:
@@ -237,9 +245,13 @@ class Setting_page:
                 elif event.key == pygame.K_BACKSPACE:
                     # 退格键删除字符
                     self.username = self.username[:-1]
-                else:
-                    # 添加字符（仅添加有效字符且限制长度）
-                    if len(self.username) < 12 and event.unicode.isprintable():
-                        self.username += event.unicode
+                # 移除了直接使用KEYDOWN事件添加字符的代码
+            
+            # 使用TEXTINPUT事件处理文本输入，包括中文和其他语言
+            elif event.type == pygame.TEXTINPUT and self.username_active:
+                # 添加字符（仅添加有效字符且限制长度）
+                if len(self.username) < 12:
+                    print(f"文本输入: {event.text}")
+                    self.username += event.text
         
         return next_page_id, done
