@@ -22,9 +22,12 @@ from src.pages.BasicMode import Basic_mode
 from src.pages.LeisureMode import Leisure_mode
 from src.pages.SettingPage import Setting_page
 from src.pages.NetworkMode import Network_mode
+from src.utils import config
 # 导入网络通信相关模块
 from src.network.network_client import NetworkClient
 from src.network.game_session import GameSession
+
+game_config = config.load_config()
 
 # 初始化游戏引擎
 pygame.init()
@@ -73,7 +76,7 @@ while not done:
             # 对于联机模式，每次都创建新的实例
             if next_page_id == 'network_mode':
                 # 每次进入联机模式时，都创建新的网络客户端和游戏会话实例
-                network_client = NetworkClient(server_url="ws://localhost:8765")
+                network_client = NetworkClient(server_url=game_config.get('server_url'))
                 game_session = GameSession(network_client)
                 
                 # 从页面字典中移除旧的联机模式页面(如果存在)
@@ -91,6 +94,10 @@ while not done:
             elif next_page_id not in pages:
                 pages[next_page_id] = page_classes[next_page_id](screen=screen)
                 print(f"创建新页面: {next_page_id}")
+            else:
+                print(f"页面 {next_page_id} 已存在，使用现有实例,并重新初始化")
+                # 重新初始化页面
+                pages[next_page_id].__init__(screen=screen)
                 
             # 切换到请求的页面
             current_page_id = next_page_id

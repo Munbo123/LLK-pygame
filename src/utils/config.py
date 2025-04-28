@@ -9,6 +9,7 @@ DEFAULT_CONFIG = {
     "rows": 10,
     "columns": 10,
     "username": "player",  # 添加默认用户名
+    "server_url": "ws://localhost:8765",  # 默认服务器地址
     # 可以在此添加更多默认配置项
 }
 
@@ -33,22 +34,6 @@ def load_config():
     except Exception as e:
         print(f"加载配置文件时出错: {e}")
         return DEFAULT_CONFIG
-
-def update_game_size(rows, columns):
-    """
-    更新游戏的行数和列数
-    """
-    config = load_config()
-    config["rows"] = rows
-    config["columns"] = columns
-    
-    try:
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(config, f, ensure_ascii=False, indent=4)
-        return True
-    except Exception as e:
-        print(f"保存配置文件时出错: {e}")
-        return False
 
 def update_config(key, value):
     """

@@ -1,5 +1,6 @@
 {
-    "rows": 10,
+    "rows": 4,
     "columns": 15,
-    "username": "Munbo123"
+    "username": "Munbo123",
+    "server_url": "ws://localhost:8765"
 }
