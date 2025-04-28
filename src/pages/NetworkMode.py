@@ -10,12 +10,13 @@ from src.components.Scoreboard import Scoreboard  # 导入新创建的计分板�
 from src.components.MatrixRenderer import MatrixRenderer  # 导入新创建的矩阵渲染器组件
 from src.utils.image_processor import process_fruit_sheet
 from src.utils.config import load_config
+from src.utils.config import get_resource_path
 from src.network.network_client import NetworkClient
 from src.network.game_session import GameSession
 
-game_background_path = r"./assets/fruit_bg.bmp"
-sheet_path = r"./assets/fruit_element.bmp"
-mask_path = r"./assets/fruit_mask.bmp"
+game_background_path = get_resource_path('assets/fruit_bg.bmp')
+sheet_path = get_resource_path('assets/fruit_element.bmp')
+mask_path = get_resource_path('assets/fruit_mask.bmp')
 
 class Network_mode:
     def __init__(self, screen:pygame.Surface,network_client:NetworkClient, game_session:GameSession):

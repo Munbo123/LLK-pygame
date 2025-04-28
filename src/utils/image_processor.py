@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import pygame
 import os
-import sys
+from src.utils.config import get_resource_path
+
+sheet_path = get_resource_path('assets/fruit_element.bmp')
+mask_path = get_resource_path('assets/fruit_mask.bmp')
 
 # 初始化pygame
 pygame.init()
@@ -15,7 +18,7 @@ def _initialize_video_mode_for_server():
     pygame.display.set_mode((1, 1))
     print("已启用虚拟显示模式（服务端环境）")
 
-def process_fruit_sheet(sheet_path:str=r"./assets/fruit_element.bmp", mask_path:str=r"./assets/fruit_mask.bmp") -> list[pygame.Surface]:
+def process_fruit_sheet(sheet_path:str=sheet_path, mask_path:str=mask_path) -> list[pygame.Surface]:
     '''
     将水果图集转换为透明的 Surface，并切分为10个水果图像
     

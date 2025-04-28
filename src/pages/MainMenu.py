@@ -7,10 +7,10 @@ from src.components.Button import Button
 from src.pages.BasicMode import Basic_mode
 from src.pages.LeisureMode import Leisure_mode
 
+from src.utils.config import get_resource_path
 
-
-icon_path = r"./assets/LLK.ico"
-main_menu_background_path = r"./assets/llk_main.bmp"
+icon_path = get_resource_path('assets/LLK.ico')
+main_menu_background_path = get_resource_path('assets/llk_main.bmp')
 
 # 设置窗口标题和图标
 pygame.display.set_caption('欢乐连连看')

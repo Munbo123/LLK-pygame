@@ -7,11 +7,11 @@ from src.logic.graph_logic import Graph
 from src.components.Button import Button
 from src.components.ProgressBar import Progress_bar
 from src.utils.image_processor import process_fruit_sheet  # 导入新的工具函数
-from src.utils.config import load_config
+from src.utils.config import load_config, get_resource_path
 
-game_background_path = r"./assets/fruit_bg.bmp"
-sheet_path = r"./assets/fruit_element.bmp"
-mask_path = r"./assets/fruit_mask.bmp"
+game_background_path = get_resource_path('assets/fruit_bg.bmp')
+sheet_path = get_resource_path('assets/fruit_element.bmp')
+mask_path = get_resource_path('assets/fruit_mask.bmp')
 
 class Basic_mode:
     def __init__(self,screen:pygame.Surface):

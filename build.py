@@ -40,6 +40,9 @@ def main():
                  f'--add-data "config{os.pathsep}config" ' \
                  f'--icon="assets/LLK.ico" ' \
                  f'--windowed ' \
+                 f'--hidden-import="pygame" ' \
+                 f'--hidden-import="websockets" ' \
+                 f'--hidden-import="asyncio" ' \
                  f'"src/client.py"'
     
     # 服务端打包命令 - 添加--onefile参数
@@ -47,6 +50,8 @@ def main():
                  f'--add-data "config{os.pathsep}config" ' \
                  f'--icon="assets/LLK.ico" ' \
                  f'--console ' \
+                 f'--hidden-import="websockets" ' \
+                 f'--hidden-import="asyncio" ' \
                  f'"src/server/server.py"'
     
     # 在Windows系统下，需要使用引号包裹路径
@@ -76,7 +81,7 @@ def main():
     
     if result_client == 0 and result_server == 0:
         print("\n所有程序打包成功！")
-        print(f"可执行文件位于: {os.path.join(project_root, 'dist', 'LLK_Client')} 和 {os.path.join(project_root, 'dist', 'LLK_Server')}")
+        print(f"可执行文件位于: {os.path.join(project_root, 'dist')}")
 
 if __name__ == "__main__":
     main()
