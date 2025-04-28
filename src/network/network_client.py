@@ -215,8 +215,15 @@ class NetworkClient:
                         
                     elif message_type in self.event_handlers:
                         # 触发对应类型的事件处理器
+                        if message_type == "matrix_state":
+                            print(f'\033[32m触发事件处理器: {message_type}\033[0m')
+                            print(f'\033[32m消息数据: {message_data}\033[0m')
+                        else:
+                            print(f'\033[34m触发事件处理器: {message_type}\033[0m')
+
                         for handler in self.event_handlers[message_type]:
                             handler(message_data)
+
                     
                 except asyncio.TimeoutError:
                     # 超时只用于检查closing标志，不是错误
@@ -396,6 +403,8 @@ class NetworkClient:
         """
         if event_type in self.event_handlers:
             self.event_handlers[event_type].append(handler)
+        else:
+            print(f"\033[31m未知事件类型: {event_type}\033[0m")
             
     def unregister_handler(self, event_type, handler):
         """

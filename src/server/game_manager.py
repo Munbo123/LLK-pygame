@@ -1,28 +1,25 @@
 """
 游戏管理器模块，负责管理玩家匹配和对局管理
 """
-import uuid
 import time
 import asyncio
 import json  # 添加 json 模块导入
 from src.server.match import Match
 
 
+
 class GameManager:
     """游戏管理器类，负责管理玩家队列和对局"""
     
-    def __init__(self, elements):
+    def __init__(self,element_len=10):
         """
         初始化游戏管理器
-        
-        Args:
-            elements: 用于初始化矩阵的元素列表
         """
         self.waiting_queue = []  # 等待匹配的玩家队列
         self.matches = {}  # 进行中的对局，键为对局ID
         self.player_to_match = {}  # 玩家ID到对局ID的映射
-        self.elements = elements  # 用于初始化矩阵的元素
         self.client_handler = None  # 客户端处理器引用，用于发送消息
+        self.element_len = element_len  # 元素数量，默认为10
     
     def set_client_handler(self, client_handler):
         """设置客户端处理器引用
@@ -56,7 +53,7 @@ class GameManager:
             match = Match(
                 player1["id"], player1["name"], 
                 player2["id"], player2["name"],
-                self.elements
+                element_len=self.element_len,  # 元素数量
             )
             
             # 保存对局信息
@@ -229,7 +226,7 @@ class GameManager:
             print(f"倒计时过程中出错: {e}")
             match.countdown_active = False
     
-    async def notify_players(self, match, message):
+    async def notify_players(self, match:Match, message):
         """
         向对局中的两个玩家发送消息
         

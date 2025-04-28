@@ -1,7 +1,7 @@
 import pygame
 import random
 import time
-import pprint
+from pprint import pprint
 
 from src.logic.matrix_logic import Matrix
 from src.components.Button import Button
@@ -474,7 +474,7 @@ class Network_mode:
 
         # 从游戏会话获取矩阵数据
         player_matrix_data = self.game_session.get_player_matrix()
-        # print(f"玩家矩阵数据: {pprint.pformat(player_matrix_data)}")
+        # pprint(f"玩家矩阵数据: {player_matrix_data}")
         opponent_matrix_data = self.game_session.get_opponent_matrix()
         # print(f"对手矩阵数据: {pprint.pformat(opponent_matrix_data)}")
         
@@ -550,8 +550,8 @@ class Network_mode:
                     # 获取玩家矩阵信息
                     player_matrix_data = self.game_session.get_player_matrix()
                     if player_matrix_data:
-                        matrix_row = player_matrix_data.get("row", self.row)
-                        matrix_col = player_matrix_data.get("col", self.col)
+                        matrix_row = len(player_matrix_data)
+                        matrix_col = len(player_matrix_data[0])
                         
                         # 计算矩阵区域
                         matrix_width = matrix_col * 40

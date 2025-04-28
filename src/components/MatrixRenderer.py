@@ -73,7 +73,7 @@ class MatrixRenderer:
         """
         self.cell_width, self.cell_height = cell_size
     
-    def set_fruit_images(self, fruit_images):
+    def set_fruit_images(self, fruit_images:list[pygame.Surface]):
         """
         设置水果图像列表
         
@@ -82,7 +82,7 @@ class MatrixRenderer:
         """
         self.fruit_images = fruit_images
     
-    def update_matrix_data(self, matrix_data):
+    def update_matrix_data(self, matrix_data:list[list[dict]]):
         """
         更新矩阵数据
         
@@ -114,25 +114,15 @@ class MatrixRenderer:
             self.draw_empty_grid()
             return
         
-        matrix = self.matrix_data.get("matrix", [])
-        row = self.matrix_data.get("row", self.row)
-        col = self.matrix_data.get("col", self.col)
-        
-        # 如果矩阵数据为空或格式不正确，绘制空白网格
-        if not matrix or row == 0 or col == 0:
-            self.draw_empty_grid()
-            return
-        
         # 遍历矩阵，绘制每个元素
-        for r in range(min(row, len(matrix))):
-            for c in range(min(col, len(matrix[r]) if r < len(matrix) else 0)):
+        for r in range(len(self.matrix_data)):
+            for c in range(len(self.matrix_data[r])):
                 # 计算单元格位置
                 x = self.x + c * self.cell_width
                 y = self.y + r * self.cell_height
-                
                 try:
                     # 获取当前元素
-                    cell = matrix[r][c]
+                    cell = self.matrix_data[r][c]
                     element_index = cell.get("index", 0)
                     status = cell.get("status", "normal")
                     

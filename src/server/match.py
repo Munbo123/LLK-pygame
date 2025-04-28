@@ -13,7 +13,7 @@ from src.logic.matrix_logic import Matrix
 class Match:
     """管理两个玩家之间的对局"""
     
-    def __init__(self, player1_id, player1_name, player2_id, player2_name, elements):
+    def __init__(self, player1_id, player1_name, player2_id, player2_name, element_len=10):
         """初始化一个新的对局
         
         Args:
@@ -21,9 +21,10 @@ class Match:
             player1_name: 第一个玩家名称
             player2_id: 第二个玩家ID
             player2_name: 第二个玩家名称
-            elements: 用于初始化矩阵的元素列表
+            element_len: 元素长度（默认10）
         """
         self.match_id = str(uuid.uuid4())
+        self.element_len = element_len  # 元素长度
         self.player1 = {
             "id": player1_id,
             "name": player1_name,
@@ -58,8 +59,6 @@ class Match:
         self.game_timer_task = None     # 游戏计时器任务引用
         self.last_time_update = time.time()  # 上次更新时间的时间戳
         
-        # 存储用于初始化矩阵的元素
-        self.elements = elements
         
         # 游戏设置
         self.rows = 6  # 矩阵行数
@@ -77,23 +76,9 @@ class Match:
             return False
             
         try:
-            # 生成随机顺序的元素列表，确保两个玩家有相同的起始矩阵
-            # 但矩阵中元素的顺序是随机的
-            elements_count = (self.rows * self.cols) // 2  # 需要的对子数
-            
-            # 创建成对的元素索引
-            element_pairs = []
-            for i in range(elements_count):
-                # 确保索引在可用元素范围内
-                element_index = i % len(self.elements)
-                element_pairs.extend([element_index, element_index])  # 添加一对相同的元素
-                
-            # 打乱元素顺序
-            random.shuffle(element_pairs)
-            
             # 为每个玩家创建矩阵
-            self.player1["matrix"] = Matrix(self.rows, self.cols, self.elements, element_pairs)
-            self.player2["matrix"] = Matrix(self.rows, self.cols, self.elements, element_pairs)
+            self.player1["matrix"] = Matrix(self.rows, self.cols,element_len=self.element_len)
+            self.player2["matrix"] = Matrix(self.rows, self.cols,element_len=self.element_len)
             
             self.game_started = True
             return True
@@ -177,13 +162,14 @@ class Match:
         
         try:
             # 获取当前格子状态
-            cell = player["matrix"].get_cell(row, col)
+            player_matrix:Matrix = player["matrix"]
+            cell = player_matrix.get_cell(row, col)
             current_status = cell["status"]
             
             # 处理点击逻辑
             if current_status == "normal":
                 # 设置为选中状态
-                player["matrix"].set_status(row, col, "selected")
+                player_matrix.set_status(row, col, "selected")
                 # 添加到选中列表
                 player["selected_cells"].append((row, col))
                 
@@ -192,23 +178,23 @@ class Match:
                     cell1_pos = player["selected_cells"][0]
                     cell2_pos = player["selected_cells"][1]
                     
-                    # 获取两个单元格的元素
-                    cell1 = player["matrix"].get_cell(cell1_pos[0], cell1_pos[1])
-                    cell2 = player["matrix"].get_cell(cell2_pos[0], cell2_pos[1])
+                    # # 获取两个单元格的元素
+                    # cell1 = player_matrix.get_cell(cell1_pos[0], cell1_pos[1])
+                    # cell2 = player_matrix.get_cell(cell2_pos[0], cell2_pos[1])
                     
                     # 使用is_eliminable方法检查两个元素是否可以消除（考虑连接路径）
-                    path = player["matrix"].is_eliminable(
+                    path = player_matrix.is_eliminable(
                         cell1_pos[0], cell1_pos[1],
                         cell2_pos[0], cell2_pos[1]
                     )
                     
                     if path:  # 如果有可行的连接路径
                         # 设置为消除状态
-                        player["matrix"].set_status(cell1_pos[0], cell1_pos[1], "eliminated")
-                        player["matrix"].set_status(cell2_pos[0], cell2_pos[1], "eliminated")
+                        player_matrix.set_status(cell1_pos[0], cell1_pos[1], "eliminated")
+                        player_matrix.set_status(cell2_pos[0], cell2_pos[1], "eliminated")
                         
                         # 减少剩余元素计数
-                        player["matrix"].decrease_elements(2)
+                        player_matrix.decrease_elements(2)
                         
                         # 清空选中的单元格
                         player["selected_cells"] = []
@@ -229,8 +215,8 @@ class Match:
                         }
                     else:
                         # 两个元素不可连接，取消选中状态
-                        player["matrix"].set_status(cell1_pos[0], cell1_pos[1], "normal")
-                        player["matrix"].set_status(cell2_pos[0], cell2_pos[1], "normal")
+                        player_matrix.set_status(cell1_pos[0], cell1_pos[1], "normal")
+                        player_matrix.set_status(cell2_pos[0], cell2_pos[1], "normal")
                         
                         # 清空选中的单元格
                         player["selected_cells"] = []
@@ -247,7 +233,7 @@ class Match:
                 
             elif current_status == "selected":
                 # 取消选中状态
-                player["matrix"].set_status(row, col, "normal")
+                player_matrix.set_status(row, col, "normal")
                 
                 # 从选中列表中移除
                 if (row, col) in player["selected_cells"]:
@@ -396,26 +382,17 @@ class Match:
             self.countdown_task = None
         return True
     
-    def _get_matrix_data(self, matrix):
+    def _get_matrix_data(self, matrix:Matrix) -> list[list[dict]]:
         """将矩阵对象转换为可序列化的字典
         
         Args:
             matrix: Matrix对象
             
         Returns:
-            dict: 表示矩阵的字典
+            dict: 表示矩阵的二维数组
         """
         matrix_data = matrix.get_matrix()
-        row = matrix.get_row()
-        col = matrix.get_col()
-        left_elements = matrix.get_left_elements()
-        
-        return {
-            "matrix": matrix_data,
-            "row": row,
-            "col": col,
-            "left_elements": left_elements
-        }
+        return matrix_data
     
     def get_score_update_json(self):
         """获取当前得分状态的JSON表示

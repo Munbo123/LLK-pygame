@@ -3,7 +3,6 @@
 """
 import asyncio
 import websockets
-import pygame
 import sys
 import os
 import argparse  # 导入argparse模块用于命令行参数解析
@@ -11,19 +10,14 @@ import argparse  # 导入argparse模块用于命令行参数解析
 # 添加项目根目录到路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from src.utils.image_processor import process_fruit_sheet
 from src.server.game_manager import GameManager
 from src.server.client_handler import ClientHandler
-
-game_background_path = r"./assets/fruit_bg.bmp"
-sheet_path = r"./assets/fruit_element.bmp"
-mask_path = r"./assets/fruit_mask.bmp"
 
 
 class GameServer:
     """游戏服务器类，启动和管理WebSocket服务器"""
     
-    def __init__(self, host="localhost", port=8765):
+    def __init__(self, host="localhost", port=8765,element_len=10):
         """
         初始化游戏服务器
         
@@ -33,20 +27,15 @@ class GameServer:
         """
         self.host = host
         self.port = port
-        self.elements = None
         self.game_manager = None
         self.client_handler = None
+        self.element_len = element_len # 元素数量，客户端必须有大于等于这个数量的元素才能正常运行
         
     async def initialize(self):
         """初始化服务器组件"""
-        # 初始化pygame以加载图像
-        pygame.init()
-        
-        # 加载连连看游戏元素
-        self.elements = process_fruit_sheet(sheet_path=sheet_path, mask_path=mask_path)
-        
+    
         # 初始化游戏管理器
-        self.game_manager = GameManager(self.elements)
+        self.game_manager = GameManager(self.element_len)
         
         # 初始化客户端处理器
         self.client_handler = ClientHandler(self.game_manager)
@@ -76,14 +65,16 @@ def main():
     parser = argparse.ArgumentParser(description='连连看游戏服务器')
     parser.add_argument('--host', type=str, default='localhost', help='服务器主机地址 (默认: localhost)')
     parser.add_argument('--port', type=int, default=8765, help='服务器端口号 (默认: 8765)')
+    parser.add_argument('--element_len', type=int, default=10, help='元素数量 (默认: 10)')
     
     # 解析命令行参数
     args = parser.parse_args()
     host = args.host
     port = args.port
+    element_len = args.element_len
     
     print(f"正在启动服务器于 {host}:{port}...")
-    server = GameServer(host, port)
+    server = GameServer(host, port,element_len)
     
     try:
         asyncio.run(server.start())
@@ -92,7 +83,6 @@ def main():
     except Exception as e:
         print(f"服务器发生错误: {e}")
     finally:
-        pygame.quit()
         print("服务器资源已清理")
 
 

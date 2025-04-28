@@ -1,7 +1,7 @@
 """
 游戏会话管理器，管理联机模式下的游戏状态
 """
-import pprint
+from pprint import pprint
 import pygame
 from src.logic.matrix_logic import Matrix
 from src.network.network_client import NetworkClient
@@ -106,6 +106,7 @@ class GameSession:
         Args:
             message: 矩阵状态更新消息数据
         """
+        pprint(f"\033[31m收到矩阵状态更新消息:\n{message}\033[0m")
         data = message.get("data", {})
         matrices = data.get("matrices", {})
         
@@ -121,7 +122,7 @@ class GameSession:
             self._update_matrix_from_data(matrices[player_id], is_player=True)
             self._update_matrix_from_data(matrices[opponent_id], is_player=False)
             
-    def _update_matrix_from_data(self, matrix_data, is_player=True):
+    def _update_matrix_from_data(self, matrix_data:list[list[dict]], is_player=True):
         """
         从服务器数据更新矩阵
         
@@ -130,39 +131,42 @@ class GameSession:
             is_player: 是否是玩家矩阵
         """
         # 获取当前要更新的矩阵
-        target_matrix = self.player_matrix if is_player else self.opponent_matrix
-        
-        # 如果矩阵不存在或尺寸变化，创建新矩阵
-        if target_matrix is None:
-            # 注意：由于在网络模式下，我们只关心矩阵状态，不需要实际的元素图像
-            # 因此可以使用空列表作为元素，后续渲染时直接使用状态信息
-            row = matrix_data.get("row", 0)
-            col = matrix_data.get("col", 0)
-            if is_player:
-                self.player_matrix = {
-                    "matrix": matrix_data.get("matrix", []),
-                    "row": row,
-                    "col": col,
-                    "left_elements": matrix_data.get("left_elements", row * col)
-                }
-            else:
-                self.opponent_matrix = {
-                    "matrix": matrix_data.get("matrix", []),
-                    "row": row,
-                    "col": col,
-                    "left_elements": matrix_data.get("left_elements", row * col)
-                }
+        if is_player:
+            self.player_matrix = matrix_data
         else:
-            # 更新现有矩阵
-            matrix = matrix_data.get("matrix", [])
-            left_elements = matrix_data.get("left_elements", 0)
+            self.opponent_matrix = matrix_data
+        
+        # # 如果矩阵不存在或尺寸变化，创建新矩阵
+        # if target_matrix is None:
+        #     # 注意：由于在网络模式下，我们只关心矩阵状态，不需要实际的元素图像
+        #     # 因此可以使用空列表作为元素，后续渲染时直接使用状态信息
+        #     row = matrix_data.get("row", 0)
+        #     col = matrix_data.get("col", 0)
+        #     if is_player:
+        #         self.player_matrix = {
+        #             "matrix": matrix_data.get("matrix", []),
+        #             "row": row,
+        #             "col": col,
+        #             "left_elements": matrix_data.get("left_elements", row * col)
+        #         }
+        #     else:
+        #         self.opponent_matrix = {
+        #             "matrix": matrix_data.get("matrix", []),
+        #             "row": row,
+        #             "col": col,
+        #             "left_elements": matrix_data.get("left_elements", row * col)
+        #         }
+        # else:
+        #     # 更新现有矩阵
+        #     matrix = matrix_data.get("matrix", [])
+        #     left_elements = matrix_data.get("left_elements", 0)
             
-            if is_player:
-                self.player_matrix["matrix"] = matrix
-                self.player_matrix["left_elements"] = left_elements
-            else:
-                self.opponent_matrix["matrix"] = matrix
-                self.opponent_matrix["left_elements"] = left_elements
+        #     if is_player:
+        #         self.player_matrix["matrix"] = matrix
+        #         self.player_matrix["left_elements"] = left_elements
+        #     else:
+        #         self.opponent_matrix["matrix"] = matrix
+        #         self.opponent_matrix["left_elements"] = left_elements
                 
     def toggle_ready(self):
         """
@@ -203,7 +207,7 @@ class GameSession:
         """
         return self.game_started
     
-    def get_player_matrix(self):
+    def get_player_matrix(self) -> list[list[dict]]:
         """
         获取玩家矩阵
         

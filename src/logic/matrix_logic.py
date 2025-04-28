@@ -1,36 +1,50 @@
 import random
-import pygame
 
 
 class Matrix():
-    def __init__(self, row, col, elements=None, element_pairs=None):
+    def __init__(self, row, col, element_len:int=10,seed=None):
         """
         初始化矩阵
         
         Args:
             row: 行数
             col: 列数
-            elements: 元素集合
-            element_pairs: 预定义的元素对索引
+            element_len: 元素集合的长度
+            seed: 随机种子，用于初始化矩阵
+        
+        matrix: 二维矩阵，存储元素信息，信息包含：{
+            "index": 元素索引,
+            "status": 元素状态（normal, selected, eliminated）
+        }
         """
         self.row = row
         self.col = col
-        self.matrix = []
+        if row * col % 2 != 0:
+            raise ValueError("行列数乘积必须为偶数")
+        self.matrix = [[None]*col for _ in range(row)]
         self.selected_pos = None
         self.path = None
         self.left_elements = row * col
-        self.elements = elements
-        
-        # 初始化矩阵
-        for i in range(row):
-            self.matrix.append([])
-            for j in range(col):
-                # 初始化每个格子，包含元素索引和状态
-                element_index = 0
-                if element_pairs and len(element_pairs) > i * col + j:
-                    element_index = element_pairs[i * col + j]
-                self.matrix[i].append({"index": element_index, "status": "normal"})
+        self.element_len = element_len    # 仅存储元素数量，元素对象由客户端自行加载
+        self.init_matrix(seed=None)  # 初始化矩阵
     
+    def init_matrix(self,seed):
+        if seed is not None:
+            random.seed(seed)
+        temp = []
+        for _ in range(self.row*self.col//2):
+            temp_index = random.randint(0, self.element_len-1)
+            temp.append(temp_index)
+            temp.append(temp_index)
+        random.shuffle(temp)
+
+        for i in range(self.row):
+            for j in range(self.col):
+                self.matrix[i][j] = {
+                    "index": temp.pop(),
+                    "status": "normal"
+                }
+
     def get_row(self):
         """
         获取矩阵行数
@@ -95,7 +109,7 @@ class Matrix():
             return True
         return False
     
-    def get_matrix(self):
+    def get_matrix(self) -> list[list[dict]]:
         """
         获取整个矩阵
         
@@ -248,21 +262,7 @@ class Matrix():
         
         return []
 
-    def get_elements(self,index:int) -> pygame.Surface:
-        '''返回元素'''
-        if index < 0 or index >= len(self.elements):
-            raise ValueError("元素序号越界")
-        return self.elements[index]
-    
-    def get_elements_width(self) -> int:
-        '''返回元素宽度'''
-        return self.elements[0].get_width()
-    
-    def get_elements_height(self) -> int:
-        '''返回元素高度'''
-        return self.elements[0].get_height()
-    
-    def promote(self):
+    def promote(self) -> list[tuple[int,int]]:
         '''寻找矩阵中可以消除的一对元素
         
         遍历整个矩阵，找到第一对可以消除的元素，并返回它们的连接路径
@@ -296,7 +296,7 @@ class Matrix():
         # 如果没有找到可以消除的元素对，返回空列表
         return []
 
-    def rearrange_matrix(self):
+    def rearrange_matrix(self) -> None:
         '''重排矩阵中的元素
         
         将矩阵中所有未被消除的元素（状态不是'eliminated'的元素）重新排列。
@@ -322,7 +322,7 @@ class Matrix():
                     self.matrix[row][col] = active_elements[element_index]
                     element_index += 1
 
-    def decrease_elements(self, count=1):
+    def decrease_elements(self, count=1) -> int:
         """
         减少剩余元素计数
         
