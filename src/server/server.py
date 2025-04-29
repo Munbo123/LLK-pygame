@@ -17,7 +17,7 @@ from src.server.client_handler import ClientHandler
 class GameServer:
     """游戏服务器类，启动和管理WebSocket服务器"""
     
-    def __init__(self, host="localhost", port=8765,element_len=10):
+    def __init__(self, host="0.0.0.0", port=8765,element_len=10):
         """
         初始化游戏服务器
         
@@ -63,7 +63,7 @@ def main():
     """主函数，启动服务器"""
     # 设置命令行参数解析器
     parser = argparse.ArgumentParser(description='连连看游戏服务器')
-    parser.add_argument('--host', type=str, default='localhost', help='服务器主机地址 (默认: localhost)')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='服务器主机地址 (默认: 0.0.0.0)')
     parser.add_argument('--port', type=int, default=8765, help='服务器端口号 (默认: 8765)')
     parser.add_argument('--element_len', type=int, default=10, help='元素数量 (默认: 10)')
     

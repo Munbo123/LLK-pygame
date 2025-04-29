@@ -5,7 +5,7 @@ a = Analysis(
     ['src\\server\\server.py'],
     pathex=[],
     binaries=[],
-    datas=[('config', 'config')],
+    datas=[],
     hiddenimports=['websockets', 'asyncio'],
     hookspath=[],
     hooksconfig={},

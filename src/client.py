@@ -27,7 +27,7 @@ from src.utils import config
 from src.network.network_client import NetworkClient
 from src.network.game_session import GameSession
 
-game_config = config.load_config()
+
 
 # 初始化游戏引擎
 pygame.init()
@@ -76,6 +76,7 @@ while not done:
             # 对于联机模式，每次都创建新的实例
             if next_page_id == 'network_mode':
                 # 每次进入联机模式时，都创建新的网络客户端和游戏会话实例
+                game_config = config.load_config()
                 network_client = NetworkClient(server_url=game_config.get('server_url'))
                 game_session = GameSession(network_client)
                 

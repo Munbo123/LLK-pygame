@@ -1,0 +1,6 @@
+{
+    "rows": 10,
+    "columns": 10,
+    "username": "player",
+    "server_url": "ws://114.55.75.39:8765"
+}

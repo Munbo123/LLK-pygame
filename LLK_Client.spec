@@ -5,7 +5,7 @@ a = Analysis(
     ['src\\client.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets', 'assets'), ('config', 'config')],
+    datas=[('assets', 'assets')],
     hiddenimports=['pygame', 'websockets', 'asyncio'],
     hookspath=[],
     hooksconfig={},
